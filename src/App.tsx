@@ -1,4 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import {
+  AdminPaymentSettings,
+  BookingTransactionControls,
+  getPlatformFeePercent,
+} from './payment';
 
 const SUPABASE_URL = 'https://ikumhfuaqqgqrexemkwn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nQhV0S4__E_3OgwrhB_QiQ_kDOc9j-E';
@@ -56,7 +61,10 @@ type Booking = {
   status: string;
   session_price: number;
   platform_fee_amount: number;
+  platform_fee_percent: number;
   instructor_net_amount: number;
+  buyer_confirmed_complete: boolean;
+  instructor_confirmed_complete: boolean;
 };
 
 function rupiah(value: number) {
@@ -220,6 +228,7 @@ function App() {
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [platformFeePercent, setPlatformFeePercent] = useState(10);
   const [ownListing, setOwnListing] = useState<Listing | null>(null);
   const [brandAvatarFile, setBrandAvatarFile] = useState<File | null>(null);
   const [brandCoverFile, setBrandCoverFile] = useState<File | null>(null);
@@ -270,7 +279,7 @@ function App() {
     const data = (await api(
       '/rest/v1/bookings?select=' +
         encodeURIComponent(
-          'id,buyer_id,instructor_id,listing_id,created_at,scheduled_at,location_type,private_location,buyer_notes,status,session_price,platform_fee_amount,instructor_net_amount'
+          'id,buyer_id,instructor_id,listing_id,created_at,scheduled_at,location_type,private_location,buyer_notes,status,session_price,platform_fee_percent,platform_fee_amount,instructor_net_amount,buyer_confirmed_complete,instructor_confirmed_complete'
         ) +
         '&order=created_at.desc',
       {},
@@ -354,6 +363,9 @@ function App() {
 
   useEffect(() => {
     void loadPublicListings();
+    void getPlatformFeePercent()
+      .then(setPlatformFeePercent)
+      .catch(() => setPlatformFeePercent(10));
     const saved = localStorage.getItem('gurules_session');
     if (!saved) return;
 
@@ -674,7 +686,7 @@ function App() {
             buyer_notes: bookingNotes.trim() || null,
             status: 'requested',
             session_price: selectedListing.price_per_session,
-            platform_fee_percent: 10,
+            platform_fee_percent: platformFeePercent,
           }),
         },
         session.access_token
@@ -698,7 +710,6 @@ function App() {
     kind: 'avatar' | 'cover'
   ) {
     if (!file) return;
-
     const validationError = validateBrandImage(file);
     if (validationError) {
       setBrandError(validationError);
@@ -1397,8 +1408,7 @@ function App() {
                         </div>
 
                         <div className="branding-form-grid">
-                          <label className="brand-upload">
-                            <span>Foto / Logo Profil</span>
+                          <label className="brand-upload">                            <span>Foto / Logo Profil</span>
                             <small>JPG, PNG, WebP · maks. 5 MB</small>
                             <input
                               type="file"
@@ -1775,9 +1785,14 @@ function App() {
                 <strong>{rupiah(selectedListing.price_per_session)}</strong>
               </div>
               <div>
-                <span>Fee GuruLes 10%</span>
+                <span>Fee GuruLes {platformFeePercent}%</span>
                 <strong>
-                  {rupiah(Math.floor(selectedListing.price_per_session * 0.1))}
+                  {rupiah(
+                    Math.floor(
+                      (selectedListing.price_per_session * platformFeePercent) /
+                        100
+                    )
+                  )}
                 </strong>
               </div>
               <div>
@@ -1785,7 +1800,11 @@ function App() {
                 <strong>
                   {rupiah(
                     selectedListing.price_per_session -
-                      Math.floor(selectedListing.price_per_session * 0.1)
+                      Math.floor(
+                        (selectedListing.price_per_session *
+                          platformFeePercent) /
+                          100
+                      )
                   )}
                 </strong>
               </div>
@@ -2097,8 +2116,7 @@ function App() {
                       <select
                         value={registerMethod}
                         onChange={event => setRegisterMethod(event.target.value)}
-                      >
-                        <option>Ke rumah</option>
+                      >                        <option>Ke rumah</option>
                         <option>Lokasi latihan</option>
                         <option>Daring</option>
                       </select>
