@@ -32,18 +32,18 @@ type Settings = {
   bank_name: string;
   bank_account_name: string;
   bank_account_number: string;
-  qris_url: string;
+  lynk_url: string;
   payment_instructions: string;
   payout_instructions: string;
 };
 
 const defaultSettings: Settings = {
   platform_fee_percent: 10,
-  payment_method_label: 'Transfer Bank / QRIS',
+  payment_method_label: 'Lynk.id / QRIS',
   bank_name: '',
   bank_account_name: '',
   bank_account_number: '',
-  qris_url: '',
+  lynk_url: '',
   payment_instructions:
     'Pembayaran dilakukan setelah pengajar menerima pesanan.',
   payout_instructions:
@@ -138,7 +138,7 @@ export function AdminPaymentSettings({
       <div className="admin-report-head">
         <div>
           <span className="eyebrow">Pengaturan Pembayaran</span>
-          <h3>Fee, rekening & QRIS GuruLes</h3>
+          <h3>Fee & pembayaran Lynk.id GuruLes</h3>
         </div>
         <span className="verified">Fee {settings.platform_fee_percent}%</span>
       </div>
@@ -171,7 +171,7 @@ export function AdminPaymentSettings({
                 payment_method_label: event.target.value,
               }))
             }
-            placeholder="Transfer Bank / QRIS"
+            placeholder="Lynk.id / QRIS"
           />
         </label>
 
@@ -215,14 +215,15 @@ export function AdminPaymentSettings({
         </label>
 
         <label>
-          URL QRIS (opsional)
+          Link Pembayaran Lynk.id
           <input
-            value={settings.qris_url}
+            value={settings.lynk_url}
             onChange={event =>
-              setSettings(current => ({ ...current, qris_url: event.target.value }))
+              setSettings(current => ({ ...current, lynk_url: event.target.value }))
             }
-            placeholder="https://..."
+            placeholder="https://lynk.id/..."
           />
+          <small>Tempel link checkout / support Lynk.id yang menerima QRIS.</small>
         </label>
 
         <label className="brand-tagline-field">
@@ -385,15 +386,17 @@ export function BookingTransactionControls({
             </div>
           )}
 
-          {settings.qris_url && (
+          {settings.lynk_url ? (
             <a
-              className="map-link"
-              href={settings.qris_url}
+              className="button primary small"
+              href={settings.lynk_url}
               target="_blank"
               rel="noreferrer"
             >
-              Buka QRIS
+              Bayar via Lynk.id
             </a>
+          ) : (
+            <small>Link pembayaran Lynk.id belum diatur Admin.</small>
           )}
 
           {payment?.verification_note && (
