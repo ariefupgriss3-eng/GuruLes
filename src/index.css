@@ -1285,3 +1285,57 @@ footer {
     flex-direction: column;
   }
 }
+
+.transaction-box {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(20, 52, 38, 0.12);
+}
+
+.transaction-status-row,
+.transaction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.transaction-status-row {
+  font-size: 0.78rem;
+  color: #5f6d64;
+}
+
+.payment-confirm-box {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(241, 246, 239, 0.9);
+}
+
+.payment-confirm-box input {
+  width: 100%;
+}
+
+.payment-account {
+  display: grid;
+  gap: 2px;
+}
+
+.payment-account span,
+.payment-confirm-box small,
+.transaction-message {
+  font-size: 0.78rem;
+  color: #5f6d64;
+}
+
+.transaction-message {
+  display: block;
+}
+
+.admin-booking-money .transaction-box,
+.booking-money .transaction-box {
+  width: 100%;
+}
