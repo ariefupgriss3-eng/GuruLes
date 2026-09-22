@@ -797,8 +797,7 @@ function App() {
       setBrandAvatarPreview('');
       setBrandCoverPreview('');
       setBrandSuccess(result.message || 'Branding berhasil disimpan.');
-      await loadPublicListings();
-    } catch (error) {
+      await loadPublicListings();    } catch (error) {
       setBrandError(
         error instanceof Error ? error.message : 'Branding belum dapat disimpan.'
       );
@@ -1182,6 +1181,11 @@ function App() {
                 </div>
               </div>
 
+              <AdminPaymentSettings
+                session={session}
+                onFeeChanged={setPlatformFeePercent}
+              />
+
               <div className="admin-booking-report">
                 <div className="admin-report-head">
                   <div>
@@ -1308,6 +1312,13 @@ function App() {
                                 ? 'Menunggu'
                                 : booking.status}
                             </span>
+                            <BookingTransactionControls
+                              session={session}
+                              booking={booking}
+                              role="admin"
+                              isAdmin
+                              onChanged={() => loadBookings(session)}
+                            />
                           </div>
                         </div>
                       );
@@ -1597,8 +1608,7 @@ function App() {
                                 {item.tagline && (
                                   <p className="parent-teacher-tagline">
                                     “{item.tagline}”
-                                  </p>
-                                )}
+                                  </p>                                )}
                                 <span className="parent-teacher-meta">
                                   {item.category} · {item.years_experience} th pengalaman
                                 </span>
@@ -1697,9 +1707,20 @@ function App() {
                               <span>
                                 Fee GuruLes {rupiah(booking.platform_fee_amount)}
                               </span>
+                              <span>
+                                Pengajar {rupiah(booking.instructor_net_amount)}
+                              </span>
                               <span className={'status-pill ' + booking.status}>
                                 {booking.status}
                               </span>
+                              {profile && (
+                                <BookingTransactionControls
+                                  session={session}
+                                  booking={booking}
+                                  role={profile.role}
+                                  onChanged={() => loadBookings(session)}
+                                />
+                              )}
                             </div>
                           </div>
                         );
