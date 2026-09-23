@@ -1,0 +1,230 @@
+/* Account dashboard tabs */
+[hidden] {
+  display: none !important;
+}
+
+.dashboard-section {
+  scroll-margin-top: 90px;
+}
+
+.dashboard-heading {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.dashboard-user-name {
+  max-width: 48%;
+  overflow: hidden;
+  color: #607068;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-tabs {
+  position: sticky;
+  top: 72px;
+  z-index: 28;
+  display: flex;
+  gap: 7px;
+  margin: 0 0 16px;
+  padding: 7px;
+  overflow-x: auto;
+  border: 1px solid #dfe8e2;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 8px 26px rgba(22,58,38,0.07);
+  backdrop-filter: blur(14px);
+  scrollbar-width: none;
+}
+
+.account-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.account-tabs button {
+  position: relative;
+  display: inline-flex;
+  flex: 1 0 auto;
+  min-width: 104px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #64736a;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.account-tabs button > span {
+  font-size: 1rem;
+}
+
+.account-tabs button small {
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.account-tabs button b {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #edf2ef;
+  color: #607068;
+  font-size: 0.58rem;
+}
+
+.account-tabs button:hover {
+  background: #f1f7f3;
+  color: #175f3d;
+}
+
+.account-tabs button.active {
+  background: #176a47;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(23,106,71,0.18);
+}
+
+.account-tabs button.active b {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+}
+
+.account-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.account-overview-grid button {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e2eae5;
+  border-radius: 15px;
+  background: #fff;
+  color: #2d4437;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 7px 22px rgba(22,58,38,0.04);
+}
+
+.account-overview-grid button:hover {
+  border-color: #bcd5c7;
+  background: #f8fbf9;
+}
+
+.account-overview-grid button > span {
+  font-size: 1.25rem;
+}
+
+.account-overview-grid button strong {
+  margin-top: 2px;
+  color: #145e3b;
+  font-size: 1.15rem;
+}
+
+.account-overview-grid button small {
+  color: #738078;
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .account-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-section {
+    padding: 24px 10px 34px;
+    scroll-margin-top: 102px;
+  }
+
+  .dashboard-heading {
+    margin-bottom: 9px;
+    padding: 0 3px;
+  }
+
+  .dashboard-heading .eyebrow {
+    font-size: 0.58rem;
+  }
+
+  .dashboard-heading h2 {
+    margin-top: 2px;
+    font-size: 1.2rem;
+  }
+
+  .dashboard-user-name {
+    max-width: 42%;
+    font-size: 0.66rem;
+  }
+
+  .account-tabs {
+    top: 101px;
+    gap: 4px;
+    margin: 0 -1px 11px;
+    padding: 5px;
+    border-radius: 13px;
+  }
+
+  .account-tabs button {
+    min-width: 76px;
+    gap: 4px;
+    padding: 8px 7px;
+    border-radius: 9px;
+  }
+
+  .account-tabs button > span {
+    font-size: 0.9rem;
+  }
+
+  .account-tabs button small {
+    font-size: 0.59rem;
+  }
+
+  .account-tabs button b {
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 0.5rem;
+  }
+
+  .user-panel {
+    border-radius: 14px;
+  }
+
+  .account-overview-grid {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .account-overview-grid button {
+    min-height: 92px;
+    padding: 11px;
+    border-radius: 12px;
+  }
+
+  .account-overview-grid button > span {
+    font-size: 1.05rem;
+  }
+
+  .account-overview-grid button strong {
+    font-size: 0.95rem;
+  }
+
+  .account-overview-grid button small {
+    font-size: 0.6rem;
+  }
+}
