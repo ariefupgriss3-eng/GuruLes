@@ -91,6 +91,19 @@ function googleMapsEmbedUrl(address: string) {
   );
 }
 
+function categoryEmoji(value: string) {
+  const key = value.toLowerCase();
+  if (key.includes('akadem') || key.includes('pelajaran')) return '📚';
+  if (key.includes('renang')) return '🏊';
+  if (key.includes('musik')) return '🎵';
+  if (key.includes('bela') || key.includes('taekwondo') || key.includes('karate')) return '🥋';
+  if (key.includes('olahraga') || key.includes('sport')) return '⚽';
+  if (key.includes('teknologi') || key.includes('komputer') || key.includes('coding')) return '💻';
+  if (key.includes('agama') || key.includes('ngaji')) return '🕌';
+  if (key.includes('seni') || key.includes('gambar')) return '🎨';
+  return '✨';
+}
+
 function brandedImageUrl(url: string | null, updatedAt: string | null) {
   if (!url) return '';
   if (!updatedAt) return url;
@@ -889,8 +902,21 @@ function App() {
           <span>GuruLes</span>
         </a>
 
+        <label className="top-search">
+          <span>⌕</span>
+          <input
+            aria-label="Cari guru, pelatih, atau keterampilan"
+            placeholder="Cari guru, pelajaran, renang, musik..."
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+            onFocus={() => {
+              window.location.hash = 'pengajar';
+            }}
+          />
+        </label>
+
         <nav className="topnav">
-          <a href="#pengajar">Cari Pengajar</a>
+          <a href="#pengajar">Cari Guru</a>
           <a href="#cara-kerja">Cara Kerja</a>
         </nav>
 
@@ -937,11 +963,21 @@ function App() {
               Indonesia. Akademik, renang, musik, bela diri, teknologi, agama,
               seni, dan keterampilan lainnya.
             </p>
+            <div className="hero-actions">
+              <a className="button primary marketplace-cta" href="#pengajar">
+                Cari Pengajar
+              </a>
+              {!session && (
+                <button className="button secondary" onClick={openRegister}>
+                  Daftar sebagai Pengajar
+                </button>
+              )}
+            </div>
             <div className="trust-row">
-              <span>🇮🇩 Seluruh Indonesia</span>
-              <span>✓ Pengajar terverifikasi</span>
-              <span>✓ Tarif transparan</span>
-              <span>✓ Pilih sesuai kebutuhan</span>
+              <span>🛡️ Terverifikasi</span>
+              <span>💳 Tarif transparan</span>
+              <span>📍 Pilih wilayah</span>
+              <span>⭐ Rating & ulasan</span>
             </div>
           </div>
 
@@ -953,6 +989,63 @@ function App() {
               Daftar ini sekarang diperbarui otomatis setelah verifikasi admin.
             </small>
           </div>
+        </section>
+
+        <section className="quick-categories" aria-label="Kategori populer">
+          <div className="quick-category-head">
+            <div>
+              <span className="eyebrow">Kategori Populer</span>
+              <h2>Belajar apa hari ini?</h2>
+            </div>
+            <button
+              className="text-button"
+              onClick={() => {
+                setCategory('Semua');
+                document.getElementById('pengajar')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Lihat semua
+            </button>
+          </div>
+          <div className="quick-category-grid">
+            {categories.slice(1, 9).map(item => (
+              <button
+                key={item}
+                className={'quick-category-card' + (category === item ? ' active' : '')}
+                onClick={() => {
+                  setCategory(item);
+                  document.getElementById('pengajar')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <span>{categoryEmoji(item)}</span>
+                <strong>{item}</strong>
+              </button>
+            ))}
+            {categories.length <= 1 && (
+              <>
+                {['Akademik', 'Renang', 'Musik', 'Bela Diri', 'Teknologi', 'Agama', 'Seni', 'Olahraga'].map(item => (
+                  <button
+                    key={item}
+                    className="quick-category-card placeholder"
+                    onClick={() => {
+                      setQuery(item);
+                      document.getElementById('pengajar')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    <span>{categoryEmoji(item)}</span>
+                    <strong>{item}</strong>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        </section>
+
+        <section className="market-promo-strip">
+          <div><span>✅</span><strong>Pengajar Terverifikasi</strong><small>Profil diperiksa admin</small></div>
+          <div><span>💬</span><strong>Langsung Booking</strong><small>Pilih jadwal & metode</small></div>
+          <div><span>💳</span><strong>Pembayaran Transparan</strong><small>Fee terlihat sebelum pesan</small></div>
+          <div><span>📱</span><strong>Mudah di HP</strong><small>Cari dan pesan kapan saja</small></div>
         </section>
 
         <section className="directory" id="pengajar">
@@ -1055,7 +1148,14 @@ function App() {
                   )}
                   <div>
                     <h3>{item.display_name}</h3>
-                    <span className="verified">✓ Terverifikasi</span>
+                    <div className="teacher-badge-row">
+                      <span className="verified">✓ Terverifikasi</span>
+                      {Number(item.average_rating) > 0 && (
+                        <span className="teacher-rating">
+                          ★ {Number(item.average_rating).toFixed(1)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1069,17 +1169,14 @@ function App() {
                 </div>
 
                 <div className="facts">
-                  <span>🏘 Desa/Kel.: {item.village || '—'}</span>
-                  <span>📌 Kecamatan: {item.district || '—'}</span>
-                  <span>🏙 Kab./Kota: {item.regency || item.city || '—'}</span>
-                  <span>🗺 Provinsi: {item.province || '—'}</span>
-                  <span>⏱ {item.duration_minutes} menit</span>
+                  <span>
+                    📍 {item.district ? item.district + ', ' : ''}
+                    {item.regency || item.city || item.province || 'Indonesia'}
+                  </span>
                   <span>💼 {item.years_experience} th pengalaman</span>
+                  <span>⏱ {item.duration_minutes} menit</span>
                   {Number(item.average_rating) > 0 && (
-                    <span>
-                      ★ {Number(item.average_rating).toFixed(1)} (
-                      {item.review_count})
-                    </span>
+                    <span>{item.review_count} ulasan</span>
                   )}
                 </div>
 
@@ -1091,7 +1188,7 @@ function App() {
 
                 <div className="price-row">
                   <div>
-                    <small>Mulai</small>
+                    <small>Mulai dari</small>
                     <strong>{rupiah(item.price_per_session)}</strong>
                     <small>/sesi</small>
                   </div>
@@ -1099,7 +1196,7 @@ function App() {
                     className="button primary"
                     onClick={() => beginBooking(item)}
                   >
-                    Pilih
+                    Pesan Sekarang
                   </button>
                 </div>
               </article>
@@ -1108,7 +1205,7 @@ function App() {
         </section>
 
         {session && (
-          <section className="dashboard-section">
+          <section className="dashboard-section" id="akun">
             <div className="section-heading">
               <div>
                 <span className="eyebrow">Akun Saya</span>
@@ -1773,6 +1870,22 @@ function App() {
         <strong>🎓 GuruLes</strong>
         <span>Marketplace pengajar privat · Arieftoteles Production</span>
       </footer>
+
+      <nav className="mobile-bottom-nav" aria-label="Navigasi utama">
+        <a href="#top"><span>🏠</span><small>Beranda</small></a>
+        <a href="#pengajar"><span>🔎</span><small>Cari</small></a>
+        {session ? (
+          <>
+            <a href="#akun"><span>📋</span><small>Pesanan</small></a>
+            <a href="#akun"><span>👤</span><small>Akun</small></a>
+          </>
+        ) : (
+          <>
+            <button onClick={() => setShowLogin(true)}><span>📋</span><small>Pesanan</small></button>
+            <button onClick={() => setShowLogin(true)}><span>👤</span><small>Masuk</small></button>
+          </>
+        )}
+      </nav>
 
       {showBooking && selectedListing && (
         <div
