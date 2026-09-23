@@ -953,15 +953,14 @@ function App() {
       <main id="top">
         <section className="hero">
           <div className="hero-copy">
-            <span className="eyebrow">Marketplace jasa belajar privat Indonesia</span>
+            <span className="eyebrow">Marketplace Guru & Pelatih Indonesia</span>
             <h1>
-              Belajar lebih dekat,
-              <span> berkembang lebih cepat.</span>
+              Guru tepat,
+              <span> belajar lebih cepat.</span>
             </h1>
             <p>
-              Temukan guru dan pelatih terverifikasi dari berbagai wilayah di
-              Indonesia. Akademik, renang, musik, bela diri, teknologi, agama,
-              seni, dan keterampilan lainnya.
+              Temukan guru dan pelatih terverifikasi untuk akademik, olahraga,
+              seni, teknologi, agama, dan keterampilan lainnya.
             </p>
             <div className="hero-actions">
               <a className="button primary marketplace-cta" href="#pengajar">
@@ -976,8 +975,7 @@ function App() {
             <div className="trust-row">
               <span>🛡️ Terverifikasi</span>
               <span>💳 Tarif transparan</span>
-              <span>📍 Pilih wilayah</span>
-              <span>⭐ Rating & ulasan</span>
+              <span>📍 Sesuai wilayah</span>
             </div>
           </div>
 
