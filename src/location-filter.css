@@ -276,3 +276,24 @@
     width: 100%;
   }
 }
+
+.gps-location-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 4px;
+  padding: 10px;
+  border-radius: 11px;
+  background: #f4f8f5;
+}
+.gps-location-box > span {
+  color: #176a47;
+  font-size: .68rem;
+  font-weight: 900;
+}
+.gps-location-box > small {
+  flex-basis: 100%;
+  color: #68756d;
+  font-size: .64rem;
+}
