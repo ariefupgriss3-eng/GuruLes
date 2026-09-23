@@ -2148,6 +2148,64 @@ function App() {
                             />
                           </label>
 
+                          <div className="brand-geo-box">
+                            <span>Lokasi layanan (opsional)</span>
+                            <small>
+                              Dipakai untuk perkiraan jarak. Koordinat publik dibulatkan
+                              agar tidak menampilkan titik presisi.
+                            </small>
+                            <button
+                              type="button"
+                              className="button secondary small"
+                              onClick={() => {
+                                if (!navigator.geolocation) {
+                                  setBrandError('Perangkat ini tidak mendukung GPS.');
+                                  return;
+                                }
+                                navigator.geolocation.getCurrentPosition(
+                                  position => {
+                                    setProfileLatitude(position.coords.latitude);
+                                    setProfileLongitude(position.coords.longitude);
+                                    setBrandError('');
+                                    setBrandSuccess(
+                                      'Lokasi layanan berhasil diambil dari perangkat.'
+                                    );
+                                  },
+                                  () =>
+                                    setBrandError(
+                                      'Izin GPS tidak diberikan. Wilayah manual tetap dapat digunakan.'
+                                    ),
+                                  {
+                                    enableHighAccuracy: true,
+                                    timeout: 10000,
+                                    maximumAge: 300000,
+                                  }
+                                );
+                              }}
+                            >
+                              📍 Ambil Lokasi Perangkat
+                            </button>
+                            {profileLatitude != null && profileLongitude != null && (
+                              <b>GPS layanan aktif</b>
+                            )}
+                          </div>
+
+                          <label className="brand-tagline-field">
+                            <span>Radius layanan (km)</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              step="1"
+                              value={serviceRadiusKm}
+                              onChange={event => {
+                                setServiceRadiusKm(event.target.value);
+                                setBrandSuccess('');
+                              }}
+                            />
+                            <small>Rekomendasi awal: 5–15 km untuk layanan ke rumah.</small>
+                          </label>
+
                           <label className="brand-tagline-field">
                             <span>Pengalaman Mengajar (tahun)</span>
                             <input
