@@ -963,6 +963,23 @@ footer {
   border-color: #72a88a;
   background: #f6faf7;
 }
+
+.role-choice.featured {
+  border-color: #abd0ba;
+  background: #f3faf5;
+}
+.role-choice.featured strong {
+  color: #155d3a;
+}
+.register-simple-note {
+  padding: 10px 12px;
+  border: 1px solid #dce8df;
+  border-radius: 10px;
+  background: #f6faf7;
+  color: #607068;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
 .role-choice strong {
   font-size: 0.96rem;
 }
