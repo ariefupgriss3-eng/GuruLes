@@ -593,16 +593,37 @@ function App() {
       return matchesText && matchesCategory && matchesRegion;
     });
 
-    if (locationScope === 'nearby') {
-      return [...matches].sort(
-        (a, b) =>
-          locationScore(b, learningLocation) -
-          locationScore(a, learningLocation)
-      );
-    }
+    return [...matches].sort((a, b) => {
+      if (growthSettings?.boost_enabled) {
+        const aBoost = a.boost_until && new Date(a.boost_until) > new Date() ? 1 : 0;
+        const bBoost = b.boost_until && new Date(b.boost_until) > new Date() ? 1 : 0;
+        if (aBoost !== bBoost) return bBoost - aBoost;
+      }
 
-    return matches;
-  }, [listings, query, category, learningLocation, locationScope]);
+      if (locationScope === 'nearby') {
+        const aDistance = distanceKm(
+          learningLocation.latitude,
+          learningLocation.longitude,
+          a.latitude,
+          a.longitude
+        );
+        const bDistance = distanceKm(
+          learningLocation.latitude,
+          learningLocation.longitude,
+          b.latitude,
+          b.longitude
+        );
+        if (aDistance != null && bDistance != null && aDistance !== bDistance) {
+          return aDistance - bDistance;
+        }
+        if (aDistance != null && bDistance == null) return -1;
+        if (aDistance == null && bDistance != null) return 1;
+        return locationScore(b, learningLocation) - locationScore(a, learningLocation);
+      }
+
+      return 0;
+    });
+  }, [listings, query, category, learningLocation, locationScope, growthSettings?.boost_enabled]);
 
   async function saveLearningLocation(location: LearningLocation) {
     setLearningLocation(location);
@@ -630,6 +651,8 @@ function App() {
             learning_district: location.district || null,
             learning_regency: location.regency || null,
             learning_province: location.province || null,
+            learning_latitude: location.latitude,
+            learning_longitude: location.longitude,
           }),
         },
         session.access_token
@@ -643,6 +666,8 @@ function App() {
               learning_district: location.district || null,
               learning_regency: location.regency || null,
               learning_province: location.province || null,
+              learning_latitude: location.latitude,
+              learning_longitude: location.longitude,
             }
           : current
       );
@@ -734,6 +759,7 @@ function App() {
           province:
             registerRole === 'instructor' ? registerProvince.trim() : undefined,
           password: registerPassword,
+          referral_code: registerReferralCode.trim() || undefined,
           category: registerRole === 'instructor' ? registerCategory : undefined,
           title: registerRole === 'instructor' ? registerTitle.trim() : undefined,
           method: registerRole === 'instructor' ? registerMethod : undefined,
@@ -760,6 +786,7 @@ function App() {
       setRegisterProvince('');
       setRegisterPassword('');
       setRegisterConfirmPassword('');
+      setRegisterReferralCode('');
       setRegisterTitle('');
       setRegisterError('');
     } catch (error) {
@@ -830,6 +857,11 @@ function App() {
     setProfileDistrict('');
     setProfileRegency('');
     setProfileProvince('');
+    setProfileLatitude(null);
+    setProfileLongitude(null);
+    setServiceRadiusKm('10');
+    setSelectedPackage(null);
+    setBookingLearnerId('');
     setBrandError('');
     setBrandSuccess('');
     setSelectedListing(null);
@@ -849,6 +881,8 @@ function App() {
     setBookingDateTime('');
     setBookingAddress('');
     setBookingNotes('');
+    setSelectedPackage(null);
+    setBookingLearnerId('');
 
     if (!session) {
       setShowLogin(true);
@@ -895,15 +929,14 @@ function App() {
 
     setBookingBusy(true);
     try {
-      await api(
-        '/rest/v1/bookings',
+      const result = (await api(
+        '/functions/v1/create-booking',
         {
           method: 'POST',
-          headers: { Prefer: 'return=representation' },
           body: JSON.stringify({
-            buyer_id: profile.id,
-            instructor_id: selectedListing.instructor_id,
             listing_id: selectedListing.id,
+            package_id: selectedPackage?.id || null,
+            student_profile_id: bookingLearnerId || null,
             scheduled_at: scheduledDate.toISOString(),
             location_type: bookingLocationType,
             private_location:
@@ -911,18 +944,17 @@ function App() {
                 ? null
                 : bookingAddress.trim() || null,
             buyer_notes: bookingNotes.trim() || null,
-            status: 'requested',
-            session_price: selectedListing.price_per_session,
-            platform_fee_percent: platformFeePercent,
           }),
         },
         session.access_token
-      );
+      )) as { message?: string };
 
       await loadBookings(session);
       setShowBooking(false);
       setSelectedListing(null);
-      window.alert('Permintaan belajar berhasil dikirim ke pengajar.');
+      setSelectedPackage(null);
+      setBookingLearnerId('');
+      window.alert(result.message || 'Permintaan belajar berhasil dikirim ke pengajar.');
     } catch (error) {
       setBookingError(
         error instanceof Error ? error.message : 'Pemesanan gagal dikirim.'
@@ -965,8 +997,14 @@ function App() {
     }
 
     const experience = Number(yearsExperience);
+    const radius = Number(serviceRadiusKm);
     if (!Number.isInteger(experience) || experience < 0 || experience > 60) {
       setBrandError('Pengalaman mengajar harus 0 sampai 60 tahun.');
+      return;
+    }
+
+    if (!Number.isInteger(radius) || radius < 1 || radius > 100) {
+      setBrandError('Radius layanan harus 1 sampai 100 km.');
       return;
     }
 
@@ -1005,6 +1043,9 @@ function App() {
             district: profileDistrict.trim(),
             regency: profileRegency.trim(),
             province: profileProvince.trim(),
+            latitude: profileLatitude,
+            longitude: profileLongitude,
+            service_radius_km: radius,
             avatar_path: avatarPath,
             cover_path: coverPath,
           }),
@@ -1019,6 +1060,9 @@ function App() {
       setProfileDistrict(result.listing.district || '');
       setProfileRegency(result.listing.regency || '');
       setProfileProvince(result.listing.province || '');
+      setProfileLatitude(result.listing.latitude ?? null);
+      setProfileLongitude(result.listing.longitude ?? null);
+      setServiceRadiusKm(String(result.listing.service_radius_km ?? 10));
       setBrandAvatarFile(null);
       setBrandCoverFile(null);
       setBrandAvatarPreview('');
