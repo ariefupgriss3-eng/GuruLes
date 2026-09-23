@@ -332,7 +332,16 @@ function App() {
   const [registerMethod, setRegisterMethod] = useState('Ke rumah');
   const [registerPrice, setRegisterPrice] = useState('50000');
   const [registerError, setRegisterError] = useState('');
-  const [registerReferralCode, setRegisterReferralCode] = useState('');
+  const [registerReferralCode, setRegisterReferralCode] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search)
+        .get('ref')
+        ?.trim()
+        .toUpperCase() || '';
+    } catch {
+      return '';
+    }
+  });
   const [registerBusy, setRegisterBusy] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
