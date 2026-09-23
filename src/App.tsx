@@ -1830,35 +1830,27 @@ function App() {
 
         <section className="how" id="cara-kerja">
           <span className="eyebrow">Cara Kerja</span>
-          <h2>Marketplace sederhana, status transparan</h2>
+          <h2>4 langkah, langsung belajar</h2>
           <div className="steps">
             <div>
               <strong>1</strong>
-              <h3>Pengajar mendaftar</h3>
-              <p>
-                Lengkapi profil, bidang keahlian, lokasi, metode, dan tarif.
-              </p>
+              <h3>Pengajar daftar</h3>
+              <p>Buat profil, layanan, dan tarif.</p>
             </div>
             <div>
               <strong>2</strong>
-              <h3>Admin memverifikasi</h3>
-              <p>
-                Listing yang disetujui otomatis menjadi aktif dan tampil di
-                publik.
-              </p>
+              <h3>Diverifikasi</h3>
+              <p>Admin memeriksa profil pengajar.</p>
             </div>
             <div>
               <strong>3</strong>
-              <h3>Orang tua memilih</h3>
-              <p>Cari berdasarkan kebutuhan, kategori, lokasi, dan tarif.</p>
+              <h3>Pilih & booking</h3>
+              <p>Pilih pengajar, jadwal, dan metode.</p>
             </div>
             <div>
               <strong>4</strong>
-              <h3>Transaksi tercatat</h3>
-              <p>
-                Fee layanan GuruLes ditampilkan transparan pada proses
-                pemesanan.
-              </p>
+              <h3>Bayar & belajar</h3>
+              <p>Pembayaran transparan, sesi dimulai.</p>
             </div>
           </div>
         </section>
