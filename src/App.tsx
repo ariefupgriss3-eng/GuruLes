@@ -1860,6 +1860,19 @@ function App() {
                               isAdmin
                               onChanged={() => loadBookings(session)}
                             />
+                            <PackageSessionProgress
+                              session={session}
+                              booking={booking}
+                              role="admin"
+                              onChanged={() => loadBookings(session)}
+                            />
+                            <BookingIssueControls
+                              session={session}
+                              booking={booking}
+                              role="admin"
+                              isAdmin
+                              onChanged={() => loadBookings(session)}
+                            />
                           </div>
                         </div>
                       );
@@ -2377,12 +2390,26 @@ function App() {
                                 {booking.status}
                               </span>
                               {profile && (
-                                <BookingTransactionControls
-                                  session={session}
-                                  booking={booking}
-                                  role={profile.role}
-                                  onChanged={() => loadBookings(session)}
-                                />
+                                <>
+                                  <BookingTransactionControls
+                                    session={session}
+                                    booking={booking}
+                                    role={profile.role}
+                                    onChanged={() => loadBookings(session)}
+                                  />
+                                  <PackageSessionProgress
+                                    session={session}
+                                    booking={booking}
+                                    role={profile.role}
+                                    onChanged={() => loadBookings(session)}
+                                  />
+                                  <BookingIssueControls
+                                    session={session}
+                                    booking={booking}
+                                    role={profile.role}
+                                    onChanged={() => loadBookings(session)}
+                                  />
+                                </>
                               )}
                               <ReviewForm
                                 session={session}
