@@ -622,12 +622,6 @@ function App() {
     });
 
     return [...matches].sort((a, b) => {
-      if (growthSettings?.boost_enabled) {
-        const aBoost = a.boost_until && new Date(a.boost_until) > new Date() ? 1 : 0;
-        const bBoost = b.boost_until && new Date(b.boost_until) > new Date() ? 1 : 0;
-        if (aBoost !== bBoost) return bBoost - aBoost;
-      }
-
       if (locationScope === 'nearby') {
         const aDistance = distanceKm(
           learningLocation.latitude,
@@ -646,10 +640,28 @@ function App() {
         }
         if (aDistance != null && bDistance == null) return -1;
         if (aDistance == null && bDistance != null) return 1;
-        return locationScore(b, learningLocation) - locationScore(a, learningLocation);
+
+        const regionGap =
+          locationScore(b, learningLocation) -
+          locationScore(a, learningLocation);
+        if (regionGap !== 0) return regionGap;
       }
 
-      return 0;
+      if (growthSettings?.boost_enabled) {
+        const aBoost =
+          a.boost_until && new Date(a.boost_until) > new Date() ? 1 : 0;
+        const bBoost =
+          b.boost_until && new Date(b.boost_until) > new Date() ? 1 : 0;
+        if (aBoost !== bBoost) return bBoost - aBoost;
+      }
+
+      if (growthSettings?.launch_mode) {
+        const aFounding = a.founding_teacher_no ?? Number.MAX_SAFE_INTEGER;
+        const bFounding = b.founding_teacher_no ?? Number.MAX_SAFE_INTEGER;
+        if (aFounding !== bFounding) return aFounding - bFounding;
+      }
+
+      return Number(b.average_rating || 0) - Number(a.average_rating || 0);
     });
   }, [
     listings,
@@ -659,6 +671,7 @@ function App() {
     locationScope,
     distanceRadiusKm,
     growthSettings?.boost_enabled,
+    growthSettings?.launch_mode,
   ]);
 
   async function saveLearningLocation(location: LearningLocation) {
