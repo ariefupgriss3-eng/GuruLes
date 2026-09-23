@@ -600,7 +600,7 @@ function App() {
     setRegisterError('');
   }
 
-  function chooseRegisterRole(role: 'parent' | 'student' | 'instructor') {
+  function chooseRegisterRole(role: 'parent' | 'instructor') {
     setRegisterRole(role);
     setRegisterError('');
     setRegisterStep(2);
@@ -613,14 +613,9 @@ function App() {
     if (
       !registerName.trim() ||
       !registerPhone.trim() ||
-      !registerPassword ||
-      (registerRole !== 'instructor' && !registerCity.trim())
+      !registerPassword
     ) {
-      setRegisterError(
-        registerRole === 'instructor'
-          ? 'Lengkapi nama, nomor HP, dan password.'
-          : 'Lengkapi nama, nomor HP, Kabupaten/Kota dan Provinsi, serta password.'
-      );
+      setRegisterError('Lengkapi nama, nomor HP, dan password.');
       return;
     }
 
@@ -666,8 +661,7 @@ function App() {
           role: registerRole,
           full_name: registerName.trim(),
           phone: registerPhone.trim(),
-          city:
-            registerRole === 'instructor' ? undefined : registerCity.trim(),
+          city: undefined,
           village:
             registerRole === 'instructor' ? registerVillage.trim() : undefined,
           district:
@@ -803,7 +797,7 @@ function App() {
       isAdmin ||
       (profile?.role !== 'parent' && profile?.role !== 'student')
     ) {
-      window.alert('Pemesanan dilakukan melalui akun Murid atau Orang Tua.');
+      window.alert('Pemesanan dilakukan melalui akun Pencari Guru.');
       return;
     }
 
@@ -817,7 +811,7 @@ function App() {
     setBookingError('');
 
     if (profile.role !== 'parent' && profile.role !== 'student') {
-      setBookingError('Pemesanan hanya dapat dilakukan oleh Murid atau Orang Tua.');
+      setBookingError('Pemesanan hanya dapat dilakukan oleh akun Pencari Guru.');
       return;
     }
 
@@ -1046,11 +1040,9 @@ function App() {
     ? 'Admin GuruLes'
     : profile?.role === 'instructor'
       ? 'Pengajar'
-      : profile?.role === 'parent'
-        ? 'Orang Tua'
-        : profile?.role === 'student'
-          ? 'Murid'
-          : '';
+      : profile?.role === 'parent' || profile?.role === 'student'
+        ? 'Pencari Guru'
+        : '';
 
   useEffect(() => {
     setDashboardTab('summary');
@@ -1575,7 +1567,7 @@ function App() {
                 <div className="admin-report-head">
                   <div>
                     <span className="eyebrow">Laporan Pemesanan</span>
-                    <h3>Transaksi Parent / Murid</h3>
+                    <h3>Transaksi Pencari Guru</h3>
                   </div>
                   <button
                     className="button secondary small"
@@ -1628,7 +1620,7 @@ function App() {
 
                 {bookings.length === 0 ? (
                   <div className="status-box">
-                    Belum ada pemesanan dari Orang Tua atau Murid.
+                    Belum ada pemesanan dari Pencari Guru.
                   </div>
                 ) : (
                   <div className="admin-booking-list">
@@ -2484,37 +2476,32 @@ function App() {
               <div className="role-choice-grid">
                 <button
                   type="button"
-                  className="role-choice"
+                  className="role-choice featured"
                   onClick={() => chooseRegisterRole('parent')}
                 >
-                  <strong>👨‍👩‍👧 Orang Tua</strong>
-                  <span>Mencari dan memesan pengajar untuk anak.</span>
-                </button>
-                <button
-                  type="button"
-                  className="role-choice"
-                  onClick={() => chooseRegisterRole('student')}
-                >
-                  <strong>🎒 Murid</strong>
-                  <span>Mencari pengajar untuk kebutuhan belajar sendiri.</span>
+                  <strong>🔎 Cari Guru</strong>
+                  <span>
+                    Untuk orang tua atau murid yang ingin mencari, bertanya,
+                    menyimpan favorit, dan memesan pengajar.
+                  </span>
                 </button>
                 <button
                   type="button"
                   className="role-choice"
                   onClick={() => chooseRegisterRole('instructor')}
                 >
-                  <strong>👩‍🏫 Guru / Pengajar / Pelatih</strong>
-                  <span>Menawarkan jasa belajar, olahraga, seni, atau keterampilan.</span>
+                  <strong>👩‍🏫 Daftar sebagai Pengajar</strong>
+                  <span>
+                    Untuk guru, tutor, pelatih, dan instruktur yang menawarkan jasa.
+                  </span>
                 </button>
               </div>
             ) : (
               <form onSubmit={handleRegister}>
                 <div className="chosen-role">
-                  {registerRole === 'parent'
-                    ? '👨‍👩‍👧 Orang Tua'
-                    : registerRole === 'student'
-                      ? '🎒 Murid'
-                      : '👩‍🏫 Guru / Pengajar / Pelatih'}
+                  {registerRole === 'instructor'
+                    ? '👩‍🏫 Pengajar'
+                    : '🔎 Pencari Guru'}
                 </div>
 
                 <label>
@@ -2537,14 +2524,9 @@ function App() {
                   />
                 </label>
                 {registerRole !== 'instructor' && (
-                  <label>
-                    Kabupaten/Kota, Provinsi
-                    <input
-                      value={registerCity}
-                      onChange={event => setRegisterCity(event.target.value)}
-                      placeholder="Contoh: Surabaya, Jawa Timur"
-                    />
-                  </label>
+                  <div className="register-simple-note">
+                    📍 Lokasi belajar bisa diatur setelah masuk atau saat mencari guru.
+                  </div>
                 )}
                 <label>
                   Password
