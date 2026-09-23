@@ -45,6 +45,11 @@ type Settings = {
   premium_enabled: boolean;
   boost_enabled: boolean;
   payment_automation_mode: string;
+  pilot_mode: boolean;
+  pilot_teacher_limit: number;
+  pilot_buyer_limit: number;
+  pilot_title: string;
+  pilot_message: string;
 };
 
 const defaultSettings: Settings = {
@@ -68,6 +73,11 @@ const defaultSettings: Settings = {
   premium_enabled: false,
   boost_enabled: true,
   payment_automation_mode: 'manual',
+  pilot_mode: true,
+  pilot_teacher_limit: 20,
+  pilot_buyer_limit: 50,
+  pilot_title: 'Uji Coba Terbatas GuruLes',
+  pilot_message: 'Pilot awal maksimal 20 pengajar dan 50 pencari guru. Fee platform tetap 0% selama masa uji coba.',
 };
 
 async function api(path: string, options: RequestInit = {}, token?: string) {
@@ -185,6 +195,67 @@ export function AdminPaymentSettings({
             <small>Jika aktif, fee transaksi dipaksa 0%.</small>
           </span>
         </label>
+
+        <div className="launch-admin-box">
+          <label className="toggle-setting">
+            <input
+              type="checkbox"
+              checked={settings.pilot_mode}
+              onChange={event =>
+                setSettings(current => ({ ...current, pilot_mode: event.target.checked }))
+              }
+            />
+            <span>
+              <strong>Mode Uji Coba Terbatas</strong>
+              <small>Batasi pendaftaran baru selama pilot tanpa mengganggu akun yang sudah ada.</small>
+            </span>
+          </label>
+          <div className="branding-form-grid">
+            <label>
+              Maksimal pengajar pilot
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={settings.pilot_teacher_limit}
+                onChange={event =>
+                  setSettings(current => ({ ...current, pilot_teacher_limit: Number(event.target.value) }))
+                }
+              />
+            </label>
+            <label>
+              Maksimal pencari guru pilot
+              <input
+                type="number"
+                min="1"
+                max="100000"
+                value={settings.pilot_buyer_limit}
+                onChange={event =>
+                  setSettings(current => ({ ...current, pilot_buyer_limit: Number(event.target.value) }))
+                }
+              />
+            </label>
+            <label>
+              Judul pilot
+              <input
+                value={settings.pilot_title}
+                onChange={event =>
+                  setSettings(current => ({ ...current, pilot_title: event.target.value }))
+                }
+              />
+            </label>
+            <label className="brand-tagline-field">
+              Pesan pilot
+              <textarea
+                rows={2}
+                value={settings.pilot_message}
+                onChange={event =>
+                  setSettings(current => ({ ...current, pilot_message: event.target.value }))
+                }
+              />
+            </label>
+          </div>
+        </div>
 
         <div className="branding-form-grid">
           <label>
