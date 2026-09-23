@@ -1486,6 +1486,7 @@ function App() {
                           </div>
 
                           <div className="admin-booking-money">
+                            <BookingTimeline booking={booking} />
                             <strong>{rupiah(booking.session_price)}</strong>
                             <span>
                               Fee {rupiah(booking.platform_fee_amount)}
@@ -1926,6 +1927,7 @@ function App() {
                               )}
                             </div>
                             <div className="booking-money">
+                              <BookingTimeline booking={booking} />
                               <strong>{rupiah(booking.session_price)}</strong>
                               <span>
                                 Fee GuruLes {rupiah(booking.platform_fee_amount)}
@@ -1944,6 +1946,11 @@ function App() {
                                   onChanged={() => loadBookings(session)}
                                 />
                               )}
+                              <ReviewForm
+                                session={session}
+                                booking={booking}
+                                onReviewed={() => loadPublicListings()}
+                              />
                             </div>
                           </div>
                         );
@@ -2063,14 +2070,12 @@ function App() {
             </div>
 
             <form onSubmit={submitBooking}>
-              <label>
-                Jadwal belajar
-                <input
-                  type="datetime-local"
-                  value={bookingDateTime}
-                  onChange={event => setBookingDateTime(event.target.value)}
-                />
-              </label>
+              <BookingAvailabilityPicker
+                instructorId={selectedListing.instructor_id}
+                durationMinutes={selectedListing.duration_minutes}
+                value={bookingDateTime}
+                onChange={setBookingDateTime}
+              />
 
               <label>
                 Metode belajar
