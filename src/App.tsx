@@ -1352,15 +1352,20 @@ function App() {
 
             {isAdmin ? (
               <>
-                <BusinessDashboard
-                  session={session}
-                  role="admin"
-                  bookings={bookings}
-                  totalUsers={adminProfiles.length}
-                  totalInstructors={adminListings.length}
-                />
+                <div hidden={dashboardTab !== 'summary'}>
+                  <BusinessDashboard
+                    session={session}
+                    role="admin"
+                    bookings={bookings}
+                    totalUsers={adminProfiles.length}
+                    totalInstructors={adminListings.length}
+                  />
+                </div>
 
-                <div className="admin-panel">
+                <div
+                  className="admin-panel"
+                  hidden={dashboardTab !== 'instructors'}
+                >
                 <div className="admin-summary">
                   <strong>{adminListings.length}</strong>
                   <span>total listing pengajar</span>
@@ -1423,12 +1428,17 @@ function App() {
                 </div>
               </div>
 
-              <AdminPaymentSettings
-                session={session}
-                onFeeChanged={setPlatformFeePercent}
-              />
+              <div hidden={dashboardTab !== 'payment'}>
+                <AdminPaymentSettings
+                  session={session}
+                  onFeeChanged={setPlatformFeePercent}
+                />
+              </div>
 
-              <div className="admin-booking-report">
+              <div
+                className="admin-booking-report"
+                hidden={dashboardTab !== 'orders'}
+              >
                 <div className="admin-report-head">
                   <div>
                     <span className="eyebrow">Laporan Pemesanan</span>
@@ -1572,14 +1582,51 @@ function App() {
               </>
             ) : (
               <>
-                <div className="user-panel">
+                <div
+                  className="user-panel"
+                  hidden={dashboardTab !== 'summary'}
+                >
                   <strong>{profile?.full_name}</strong>
                   <p>
                     {profile?.role === 'instructor'
-                      ? 'Profil pengajar Anda terhubung ke database GuruLes. Listing yang sudah diverifikasi dan aktif otomatis muncul di daftar publik.'
-                      : 'Pilih guru atau pelatih terverifikasi langsung dari akun Anda.'}
+                      ? 'Kelola pesanan, pendapatan, jadwal, chat, dan profil pengajar dari satu dashboard.'
+                      : 'Kelola pesanan, pengajar favorit, chat, dan pencarian dari satu dashboard.'}
                   </p>
                 </div>
+
+                {(profile?.role === 'parent' || profile?.role === 'student') && (
+                  <div
+                    className="account-overview-grid"
+                    hidden={dashboardTab !== 'summary'}
+                  >
+                    <button onClick={() => openDashboardTab('orders')}>
+                      <span>📦</span>
+                      <strong>{bookings.length}</strong>
+                      <small>Total Pesanan</small>
+                    </button>
+                    <button onClick={() => openDashboardTab('orders')}>
+                      <span>⏳</span>
+                      <strong>
+                        {bookings.filter(item =>
+                          ['requested', 'accepted', 'paid', 'in_progress'].includes(
+                            item.status
+                          )
+                        ).length}
+                      </strong>
+                      <small>Pesanan Aktif</small>
+                    </button>
+                    <button onClick={() => openDashboardTab('find')}>
+                      <span>🎓</span>
+                      <strong>{listings.length}</strong>
+                      <small>Pengajar Tersedia</small>
+                    </button>
+                    <button onClick={() => openDashboardTab('chat')}>
+                      <span>💬</span>
+                      <strong>Chat</strong>
+                      <small>Tanya Pengajar</small>
+                    </button>
+                  </div>
+                )}
 
                 {profile?.role === 'instructor' && (
                   <>
