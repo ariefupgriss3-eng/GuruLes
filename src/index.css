@@ -2231,3 +2231,86 @@ html {
     font-size: 0.58rem;
   }
 }
+
+
+/* Compact how-it-works */
+.how {
+  padding-top: 42px;
+  padding-bottom: 42px;
+}
+
+.how > h2 {
+  margin: 6px 0 0;
+}
+
+.steps {
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.steps > div {
+  padding: 16px;
+  border-radius: 15px;
+}
+
+.steps strong {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 0.84rem;
+}
+
+.steps h3 {
+  margin: 12px 0 5px;
+  font-size: 0.92rem;
+}
+
+.steps p {
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .how {
+    padding: 26px 12px 32px;
+  }
+
+  .how .eyebrow {
+    font-size: 0.62rem;
+  }
+
+  .how > h2 {
+    margin-top: 3px;
+    font-size: 1.16rem;
+    line-height: 1.15;
+  }
+
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .steps > div {
+    min-height: 118px;
+    padding: 11px;
+    border-radius: 12px;
+  }
+
+  .steps strong {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+  }
+
+  .steps h3 {
+    margin: 8px 0 4px;
+    font-size: 0.78rem;
+  }
+
+  .steps p {
+    font-size: 0.66rem;
+    line-height: 1.38;
+  }
+}
