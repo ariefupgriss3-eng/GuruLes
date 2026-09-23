@@ -1728,9 +1728,43 @@ function App() {
                   className="admin-panel"
                   hidden={dashboardTab !== 'instructors'}
                 >
-                <div className="admin-summary">
-                  <strong>{adminListings.length}</strong>
-                  <span>total listing pengajar</span>
+                <div className="admin-growth-summary">
+                  <div>
+                    <strong>{adminListings.length}</strong>
+                    <span>Total listing</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {
+                        adminListings.filter(
+                          item => item.verification_status === 'verified'
+                        ).length
+                      }
+                    </strong>
+                    <span>Terverifikasi</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {
+                        adminListings.filter(
+                          item => item.founding_teacher_no != null
+                        ).length
+                      }
+                    </strong>
+                    <span>Pengajar Perintis</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {Math.max(
+                        0,
+                        Number(growthSettings?.founding_teacher_limit || 1000) -
+                          adminListings.filter(
+                            item => item.founding_teacher_no != null
+                          ).length
+                      )}
+                    </strong>
+                    <span>Sisa kuota perintis</span>
+                  </div>
                 </div>
 
                 <div className="admin-list">
