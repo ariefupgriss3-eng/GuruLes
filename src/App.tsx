@@ -379,7 +379,7 @@ function App() {
 
   async function loadAdminListings(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,identity_verified,credential_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
     const data = (await api(
       '/rest/v1/instructor_listings?select=' +
         encodeURIComponent(select) +
@@ -394,7 +394,7 @@ function App() {
     const data = (await api(
       '/rest/v1/bookings?select=' +
         encodeURIComponent(
-          'id,buyer_id,instructor_id,listing_id,created_at,scheduled_at,location_type,private_location,buyer_notes,status,session_price,platform_fee_percent,platform_fee_amount,instructor_net_amount,buyer_confirmed_complete,instructor_confirmed_complete'
+          'id,buyer_id,instructor_id,listing_id,created_at,scheduled_at,location_type,private_location,buyer_notes,status,session_price,platform_fee_percent,platform_fee_amount,instructor_net_amount,buyer_confirmed_complete,instructor_confirmed_complete,package_id,package_sessions_total,package_sessions_completed,package_discount_percent,student_profile_id,cancellation_reason,cancelled_by,cancelled_at,reschedule_requested_at,reschedule_requested_by,proposed_scheduled_at,dispute_reason,dispute_opened_at,dispute_resolved_at,resolution_note,no_show_by'
         ) +
         '&order=created_at.desc',
       {},
@@ -407,7 +407,7 @@ function App() {
     const data = (await api(
       '/rest/v1/profiles?select=' +
         encodeURIComponent(
-          'id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province'
+          'id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude'
         ) +
         '&order=full_name.asc',
       {},
@@ -418,7 +418,7 @@ function App() {
 
   async function loadOwnInstructorListing(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,identity_verified,credential_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
     const data = (await api(
       '/rest/v1/instructor_listings?instructor_id=eq.' +
         encodeURIComponent(activeSession.user.id) +
@@ -437,6 +437,9 @@ function App() {
     setProfileDistrict(listing?.district || '');
     setProfileRegency(listing?.regency || '');
     setProfileProvince(listing?.province || '');
+    setProfileLatitude(listing?.latitude ?? null);
+    setProfileLongitude(listing?.longitude ?? null);
+    setServiceRadiusKm(String(listing?.service_radius_km ?? 10));
     return listing;
   }
 
@@ -452,7 +455,7 @@ function App() {
     const profiles = (await api(
       '/rest/v1/profiles?id=eq.' +
         encodeURIComponent(activeSession.user.id) +
-        '&select=id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province',
+        '&select=id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude',
       {},
       activeSession.access_token
     )) as Profile[];
@@ -470,6 +473,8 @@ function App() {
         district: currentProfile.learning_district || '',
         regency: currentProfile.learning_regency || '',
         province: currentProfile.learning_province || '',
+        latitude: currentProfile.learning_latitude ?? null,
+        longitude: currentProfile.learning_longitude ?? null,
       };
       const accountHasLocation = Object.values(accountLocation).some(Boolean);
 
@@ -507,9 +512,15 @@ function App() {
 
   useEffect(() => {
     void loadPublicListings();
-    void getPlatformFeePercent()
-      .then(setPlatformFeePercent)
-      .catch(() => setPlatformFeePercent(10));
+    void loadGrowthSettings()
+      .then(settings => {
+        setGrowthSettings(settings);
+        setPlatformFeePercent(Number(settings.platform_fee_percent || 0));
+      })
+      .catch(() => {
+        setGrowthSettings(null);
+        setPlatformFeePercent(0);
+      });
     const saved = localStorage.getItem('gurules_session');
     if (!saved) return;
 
