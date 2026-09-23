@@ -2536,6 +2536,18 @@ function App() {
                                 booking={booking}
                                 onReviewed={() => loadPublicListings()}
                               />
+                              {booking.status === 'completed' &&
+                                profile &&
+                                (profile.role === 'parent' ||
+                                  profile.role === 'student') &&
+                                listing && (
+                                  <button
+                                    className="button secondary small"
+                                    onClick={() => beginBooking(listing)}
+                                  >
+                                    🔁 Pesan Lagi
+                                  </button>
+                                )}
                             </div>
                           </div>
                         );
@@ -2803,6 +2815,15 @@ function App() {
                   rows={3}
                 />
               </label>
+
+              <div className="transaction-policy-note">
+                <strong>Perlindungan transaksi GuruLes</strong>
+                <span>
+                  Sebelum pembayaran, booking dapat dibatalkan. Setelah pembayaran
+                  terverifikasi, perubahan jadwal harus disetujui kedua pihak.
+                  No-show atau masalah transaksi ditangani melalui sengketa Admin.
+                </span>
+              </div>
 
               {bookingError && (
                 <div className="form-error">{bookingError}</div>
