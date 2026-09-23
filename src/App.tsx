@@ -1486,6 +1486,20 @@ function App() {
                         </span>
                       )}
                     </div>
+                    <div className="teacher-growth-badges">
+                      {item.founding_teacher_no && (
+                        <span className="founding">
+                          🌟 Perintis #{item.founding_teacher_no}
+                        </span>
+                      )}
+                      {item.identity_verified && <span>🪪 Identitas ✓</span>}
+                      {item.credential_verified && <span>🎓 Sertifikat ✓</span>}
+                      {growthSettings?.boost_enabled &&
+                        item.boost_until &&
+                        new Date(item.boost_until) > new Date() && (
+                          <span>🚀 Boost</span>
+                        )}
+                    </div>
                   </div>
                 </div>
 
@@ -1504,12 +1518,40 @@ function App() {
                     {item.regency || item.city || item.province || 'Indonesia'}
                   </span>
                   {locationScope === 'nearby' &&
+                    distanceKm(
+                      learningLocation.latitude,
+                      learningLocation.longitude,
+                      item.latitude,
+                      item.longitude
+                    ) != null && (
+                      <span className="teacher-distance">
+                        ≈{' '}
+                        {distanceKm(
+                          learningLocation.latitude,
+                          learningLocation.longitude,
+                          item.latitude,
+                          item.longitude
+                        )!.toFixed(1)}{' '}
+                        km
+                      </span>
+                    )}
+                  {locationScope === 'nearby' &&
+                    distanceKm(
+                      learningLocation.latitude,
+                      learningLocation.longitude,
+                      item.latitude,
+                      item.longitude
+                    ) == null &&
                     locationScore(item, learningLocation) > 0 && (
                       <span className="nearby-match">
                         ✓ Sesuai lokasi Anda
                       </span>
                     )}
                   <span>💼 {item.years_experience} th pengalaman</span>
+                  <span>✅ {item.completed_sessions || 0} sesi selesai</span>
+                  {Number(item.response_rate) > 0 && (
+                    <span>⚡ Respons {Number(item.response_rate).toFixed(0)}%</span>
+                  )}
                   <span>⏱ {item.duration_minutes} menit</span>
                   {Number(item.average_rating) > 0 && (
                     <span>{item.review_count} ulasan</span>
@@ -1619,6 +1661,16 @@ function App() {
                         </span>
                       </div>
                       <div className="admin-actions">
+                        <AdminTrustControls
+                          session={session}
+                          listing={item}
+                          onChanged={() =>
+                            Promise.all([
+                              loadAdminListings(session),
+                              loadPublicListings(),
+                            ]).then(() => undefined)
+                          }
+                        />
                         <span
                           className={'status-pill ' + item.verification_status}
                         >
