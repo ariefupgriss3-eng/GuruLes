@@ -144,6 +144,12 @@ function rupiah(value: number) {
   }).format(value);
 }
 
+function bookingGrossPrice(unitPrice: number, pkg: GrowthPackage | null) {
+  const sessions = pkg?.sessions_count || 1;
+  const discount = pkg?.discount_percent || 0;
+  return Math.round(unitPrice * sessions * (100 - discount) / 100);
+}
+
 function googleMapsUrl(address: string) {
   return (
     'https://www.google.com/maps/search/?api=1&query=' +
@@ -2513,17 +2519,45 @@ function App() {
               {selectedListing.title} · {selectedListing.city}
             </p>
 
+            <LessonPackagePicker
+              listingId={selectedListing.id}
+              unitPrice={selectedListing.price_per_session}
+              value={selectedPackage}
+              onChange={setSelectedPackage}
+            />
+
+            {growthSettings?.launch_mode && (
+              <div className="launch-free-note">
+                🎉 Masa peluncuran: 0% biaya platform
+              </div>
+            )}
+
             <div className="booking-price-box">
               <div>
-                <span>Tarif sesi</span>
-                <strong>{rupiah(selectedListing.price_per_session)}</strong>
+                <span>
+                  {selectedPackage
+                    ? 'Total paket ' + selectedPackage.sessions_count + 'x'
+                    : 'Tarif sesi'}
+                </span>
+                <strong>
+                  {rupiah(
+                    bookingGrossPrice(
+                      selectedListing.price_per_session,
+                      selectedPackage
+                    )
+                  )}
+                </strong>
               </div>
               <div>
                 <span>Fee GuruLes {platformFeePercent}%</span>
                 <strong>
                   {rupiah(
                     Math.floor(
-                      (selectedListing.price_per_session * platformFeePercent) /
+                      bookingGrossPrice(
+                        selectedListing.price_per_session,
+                        selectedPackage
+                      ) *
+                        platformFeePercent /
                         100
                     )
                   )}
@@ -2533,10 +2567,16 @@ function App() {
                 <span>Diterima pengajar</span>
                 <strong>
                   {rupiah(
-                    selectedListing.price_per_session -
+                    bookingGrossPrice(
+                      selectedListing.price_per_session,
+                      selectedPackage
+                    ) -
                       Math.floor(
-                        (selectedListing.price_per_session *
-                          platformFeePercent) /
+                        bookingGrossPrice(
+                          selectedListing.price_per_session,
+                          selectedPackage
+                        ) *
+                          platformFeePercent /
                           100
                       )
                   )}
@@ -2551,6 +2591,14 @@ function App() {
                 value={bookingDateTime}
                 onChange={setBookingDateTime}
               />
+
+              {session && (
+                <LearnerPicker
+                  session={session}
+                  value={bookingLearnerId}
+                  onChange={setBookingLearnerId}
+                />
+              )}
 
               <label>
                 Metode belajar
@@ -2763,6 +2811,19 @@ function App() {
                     }
                     placeholder="Ketik ulang password"
                   />
+                </label>
+
+                <label>
+                  Kode referral (opsional)
+                  <input
+                    value={registerReferralCode}
+                    onChange={event =>
+                      setRegisterReferralCode(event.target.value.toUpperCase())
+                    }
+                    placeholder="Contoh: GL1234ABCD"
+                    maxLength={20}
+                  />
+                  <small>Isi bila Anda mendapat kode dari pengguna GuruLes.</small>
                 </label>
 
                 {registerRole === 'instructor' && (
