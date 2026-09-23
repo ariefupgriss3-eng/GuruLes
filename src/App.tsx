@@ -960,7 +960,7 @@ function App() {
             </h1>
             <p>
               Temukan guru dan pelatih terverifikasi untuk akademik, olahraga,
-              seni, teknologi, agama, dan keterampilan lainnya.
+              seni, teknologi, agama, dan keterampilan.
             </p>
             <div className="hero-actions">
               <a className="button primary marketplace-cta" href="#pengajar">
