@@ -1171,6 +1171,16 @@ function App() {
           <div className="teacher-grid">
             {filtered.map(item => (
               <article className="teacher-card" key={item.id}>
+                {(!session || profile?.role === 'parent' || profile?.role === 'student') && (
+                  <FavoriteButton
+                    session={session}
+                    listingId={item.id}
+                    onRequireLogin={() => {
+                      setLoginNotice('Masuk untuk menyimpan pengajar favorit.');
+                      setShowLogin(true);
+                    }}
+                  />
+                )}
                 {item.cover_url && (
                   <div className="teacher-cover">
                     <img
@@ -1248,12 +1258,27 @@ function App() {
                     <strong>{rupiah(item.price_per_session)}</strong>
                     <small>/sesi</small>
                   </div>
-                  <button
-                    className="button primary"
-                    onClick={() => beginBooking(item)}
-                  >
-                    Pesan Sekarang
-                  </button>
+                  <div className="teacher-card-actions">
+                    {(!session ||
+                      profile?.role === 'parent' ||
+                      profile?.role === 'student') && (
+                      <ChatLauncher
+                        session={session}
+                        listing={item}
+                        userRole={profile?.role}
+                        onRequireLogin={() => {
+                          setLoginNotice('Masuk untuk bertanya kepada pengajar.');
+                          setShowLogin(true);
+                        }}
+                      />
+                    )}
+                    <button
+                      className="button primary"
+                      onClick={() => beginBooking(item)}
+                    >
+                      Pesan Sekarang
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
