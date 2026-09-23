@@ -1552,7 +1552,9 @@ function App() {
                         </span>
                       )}
                       {item.identity_verified && <span>🪪 Identitas ✓</span>}
-                      {item.credential_verified && <span>🎓 Sertifikat ✓</span>}
+                      {item.credential_verified && <span>🎓 Pendidikan ✓</span>}
+                      {item.experience_verified && <span>💼 Pengalaman ✓</span>}
+                      {item.payout_verified && <span>💳 Rekening ✓</span>}
                       {growthSettings?.boost_enabled &&
                         item.boost_until &&
                         new Date(item.boost_until) > new Date() && (
