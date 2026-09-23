@@ -104,3 +104,23 @@
 }
 .transaction-policy-note strong{font-size:.7rem;color:#5f4d18}
 .transaction-policy-note span{font-size:.62rem;line-height:1.45;color:#766a48}
+
+.admin-growth-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:12px;
+}
+.admin-growth-summary>div{
+  display:grid;
+  gap:3px;
+  padding:11px;
+  border:1px solid #e1e8e3;
+  border-radius:12px;
+  background:#f9fbfa;
+}
+.admin-growth-summary strong{font-size:1.05rem;color:#176a47}
+.admin-growth-summary span{font-size:.62rem;color:#6d7971}
+@media(max-width:640px){
+  .admin-growth-summary{grid-template-columns:1fr 1fr}
+}
