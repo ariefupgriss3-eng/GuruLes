@@ -1925,6 +1925,9 @@ function App() {
                         bookings={bookings}
                         rating={Number(ownListing?.average_rating || 0)}
                       />
+                      {ownListing && (
+                        <InstructorGrowthStatus listing={ownListing} />
+                      )}
                     </div>
                     <div hidden={dashboardTab !== 'schedule'}>
                       {ownListing ? (
@@ -1944,6 +1947,23 @@ function App() {
                         listings={listings}
                         role="instructor"
                       />
+                    </div>
+                    <div hidden={dashboardTab !== 'growth'}>
+                      {ownListing ? (
+                        <>
+                          <InstructorPackageManager
+                            session={session}
+                            listingId={ownListing.id}
+                            instructorId={profile.id}
+                            unitPrice={ownListing.price_per_session}
+                          />
+                          <ReferralPanel session={session} isInstructor />
+                        </>
+                      ) : (
+                        <div className="status-box">
+                          Profil jasa pengajar belum ditemukan.
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -2271,6 +2291,10 @@ function App() {
                         listings={listings}
                         onBook={item => beginBooking(item as Listing)}
                       />
+                    </div>
+                    <div hidden={dashboardTab !== 'learners'}>
+                      <LearnerProfileManager session={session} />
+                      <ReferralPanel session={session} />
                     </div>
                     <div hidden={dashboardTab !== 'chat'}>
                       <ChatInbox
