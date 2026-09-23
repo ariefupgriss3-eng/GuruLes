@@ -260,6 +260,7 @@ function App() {
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [dashboardTab, setDashboardTab] = useState('summary');
   const [platformFeePercent, setPlatformFeePercent] = useState(10);
   const [ownListing, setOwnListing] = useState<Listing | null>(null);
   const [brandAvatarFile, setBrandAvatarFile] = useState<File | null>(null);
@@ -929,6 +930,39 @@ function App() {
           ? 'Murid'
           : '';
 
+  const dashboardTabs = isAdmin
+    ? [
+        { id: 'summary', icon: '📊', label: 'Ringkasan' },
+        { id: 'orders', icon: '📦', label: 'Pesanan' },
+        { id: 'instructors', icon: '🎓', label: 'Pengajar' },
+        { id: 'payment', icon: '💳', label: 'Pembayaran' },
+      ]
+    : profile?.role === 'instructor'
+      ? [
+          { id: 'summary', icon: '📊', label: 'Ringkasan' },
+          { id: 'orders', icon: '📦', label: 'Pesanan' },
+          { id: 'chat', icon: '💬', label: 'Chat' },
+          { id: 'schedule', icon: '📅', label: 'Jadwal' },
+          { id: 'profile', icon: '👤', label: 'Profil' },
+        ]
+      : [
+          { id: 'summary', icon: '🏠', label: 'Ringkasan' },
+          { id: 'orders', icon: '📦', label: 'Pesanan' },
+          { id: 'favorites', icon: '❤️', label: 'Favorit' },
+          { id: 'chat', icon: '💬', label: 'Chat' },
+          { id: 'find', icon: '🔎', label: 'Cari Guru' },
+        ];
+
+  function openDashboardTab(tab: string) {
+    setDashboardTab(tab);
+    window.setTimeout(() => {
+      document.getElementById('akun')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 0);
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -1287,11 +1321,33 @@ function App() {
 
         {session && (
           <section className="dashboard-section" id="akun">
-            <div className="section-heading">
+            <div className="section-heading dashboard-heading">
               <div>
                 <span className="eyebrow">Akun Saya</span>
                 <h2>{roleLabel || 'Pengguna GuruLes'}</h2>
               </div>
+              <span className="dashboard-user-name">
+                {isAdmin ? 'Admin' : profile?.full_name}
+              </span>
+            </div>
+
+            <div className="account-tabs" role="tablist" aria-label="Menu akun">
+              {dashboardTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={dashboardTab === tab.id}
+                  className={dashboardTab === tab.id ? 'active' : ''}
+                  onClick={() => setDashboardTab(tab.id)}
+                >
+                  <span>{tab.icon}</span>
+                  <small>{tab.label}</small>
+                  {tab.id === 'orders' && bookings.length > 0 && (
+                    <b>{bookings.length}</b>
+                  )}
+                </button>
+              ))}
             </div>
 
             {isAdmin ? (
