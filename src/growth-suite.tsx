@@ -15,6 +15,7 @@ export type GrowthSettings = {
   launch_message: string;
   future_fee_percent: number;
   founding_teacher_limit: number;
+  founding_free_months: number;
   premium_enabled: boolean;
   boost_enabled: boolean;
   payment_automation_mode: string;
@@ -523,6 +524,7 @@ export function InstructorGrowthStatus({
 }: {
   listing: {
     founding_teacher_no?:number|null;
+    founding_free_until?:string|null;
     identity_verified?:boolean;
     credential_verified?:boolean;
     experience_verified?:boolean;
@@ -535,7 +537,20 @@ export function InstructorGrowthStatus({
 }) {
   return (
     <div className="growth-status-grid">
-      <div><small>Status</small><strong>{listing.founding_teacher_no?'🌟 Pengajar Perintis #'+listing.founding_teacher_no:'Pengajar GuruLes'}</strong></div>
+      <div>
+        <small>Status</small>
+        <strong>
+          {listing.founding_teacher_no
+            ? '🌟 Pengajar Perintis #' + listing.founding_teacher_no
+            : 'Pengajar GuruLes'}
+        </strong>
+        {listing.founding_free_until &&
+          new Date(listing.founding_free_until) > new Date() && (
+            <span className="founding-free-note">
+              0% fee sampai {new Date(listing.founding_free_until).toLocaleDateString('id-ID')}
+            </span>
+          )}
+      </div>
       <div><small>Identitas</small><strong>{listing.identity_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
       <div><small>Sertifikat/Pendidikan</small><strong>{listing.credential_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
       <div><small>Pengalaman</small><strong>{listing.experience_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
