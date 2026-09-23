@@ -263,7 +263,6 @@ function App() {
     useState<'parent' | 'student' | 'instructor'>('parent');
   const [registerName, setRegisterName] = useState('');
   const [registerPhone, setRegisterPhone] = useState('');
-  const [registerCity, setRegisterCity] = useState('');
   const [registerVillage, setRegisterVillage] = useState('');
   const [registerDistrict, setRegisterDistrict] = useState('');
   const [registerRegency, setRegisterRegency] = useState('');
@@ -691,7 +690,6 @@ function App() {
       setRegisterStep(1);
       setRegisterName('');
       setRegisterPhone('');
-      setRegisterCity('');
       setRegisterVillage('');
       setRegisterDistrict('');
       setRegisterRegency('');
