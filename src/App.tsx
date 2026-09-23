@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   AdminPaymentSettings,
   BookingTransactionControls,
-  getPlatformFeePercent,
 } from './payment';
 import {
   BookingAvailabilityPicker,
@@ -20,9 +19,26 @@ import {
   LearningLocation,
   LocationFilter,
   LocationScope,
+  distanceKm,
   locationScore,
   matchesLocationScope,
 } from './location-filter';
+import {
+  AdminTrustControls,
+  BookingIssueControls,
+  GrowthPackage,
+  GrowthSettings,
+  InstructorGrowthStatus,
+  InstructorPackageManager,
+  LaunchBanner,
+  LearnerPicker,
+  LearnerProfileManager,
+  LessonPackagePicker,
+  NotificationCenter,
+  PackageSessionProgress,
+  ReferralPanel,
+  loadGrowthSettings,
+} from './growth-suite';
 
 const SUPABASE_URL = 'https://ikumhfuaqqgqrexemkwn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nQhV0S4__E_3OgwrhB_QiQ_kDOc9j-E';
@@ -51,6 +67,18 @@ type Listing = {
   cover_url: string | null;
   tagline: string;
   branding_updated_at: string | null;
+  founding_teacher_no: number | null;
+  founding_teacher_since: string | null;
+  identity_verified: boolean;
+  credential_verified: boolean;
+  completed_sessions: number;
+  response_rate: number | string;
+  premium_plan: string;
+  premium_until: string | null;
+  boost_until: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  service_radius_km: number;
 };
 
 type Session = {
@@ -69,6 +97,8 @@ type Profile = {
   learning_district: string | null;
   learning_regency: string | null;
   learning_province: string | null;
+  learning_latitude: number | null;
+  learning_longitude: number | null;
 };
 
 type Booking = {
@@ -88,6 +118,22 @@ type Booking = {
   instructor_net_amount: number;
   buyer_confirmed_complete: boolean;
   instructor_confirmed_complete: boolean;
+  package_id: string | null;
+  package_sessions_total: number;
+  package_sessions_completed: number;
+  package_discount_percent: number;
+  student_profile_id: string | null;
+  cancellation_reason: string | null;
+  cancelled_by: string | null;
+  cancelled_at: string | null;
+  reschedule_requested_at: string | null;
+  reschedule_requested_by: string | null;
+  proposed_scheduled_at: string | null;
+  dispute_reason: string | null;
+  dispute_opened_at: string | null;
+  dispute_resolved_at: string | null;
+  resolution_note: string | null;
+  no_show_by: string | null;
 };
 
 function rupiah(value: number) {
@@ -274,6 +320,7 @@ function App() {
   const [registerMethod, setRegisterMethod] = useState('Ke rumah');
   const [registerPrice, setRegisterPrice] = useState('50000');
   const [registerError, setRegisterError] = useState('');
+  const [registerReferralCode, setRegisterReferralCode] = useState('');
   const [registerBusy, setRegisterBusy] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -286,11 +333,14 @@ function App() {
     useState<'Ke rumah' | 'Lokasi latihan' | 'Daring'>('Ke rumah');
   const [bookingAddress, setBookingAddress] = useState('');
   const [bookingNotes, setBookingNotes] = useState('');
+  const [selectedPackage, setSelectedPackage] = useState<GrowthPackage | null>(null);
+  const [bookingLearnerId, setBookingLearnerId] = useState('');
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [dashboardTab, setDashboardTab] = useState('summary');
-  const [platformFeePercent, setPlatformFeePercent] = useState(10);
+  const [platformFeePercent, setPlatformFeePercent] = useState(0);
+  const [growthSettings, setGrowthSettings] = useState<GrowthSettings | null>(null);
   const [ownListing, setOwnListing] = useState<Listing | null>(null);
   const [brandAvatarFile, setBrandAvatarFile] = useState<File | null>(null);
   const [brandCoverFile, setBrandCoverFile] = useState<File | null>(null);
@@ -302,6 +352,9 @@ function App() {
   const [profileDistrict, setProfileDistrict] = useState('');
   const [profileRegency, setProfileRegency] = useState('');
   const [profileProvince, setProfileProvince] = useState('');
+  const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
+  const [profileLongitude, setProfileLongitude] = useState<number | null>(null);
+  const [serviceRadiusKm, setServiceRadiusKm] = useState('10');
   const [brandBusy, setBrandBusy] = useState(false);
   const [brandError, setBrandError] = useState('');
   const [brandSuccess, setBrandSuccess] = useState('');
