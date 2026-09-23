@@ -85,3 +85,22 @@
   .launch-admin-box{padding:10px}.growth-switches{display:grid;gap:7px}
   .notification-popover{position:fixed;right:8px;top:62px}
 }
+
+.founding-free-note{
+  display:block;
+  margin-top:3px;
+  color:#176a47;
+  font-size:.56rem;
+  font-weight:800;
+}
+.transaction-policy-note{
+  display:grid;
+  gap:3px;
+  margin:10px 0;
+  padding:10px 11px;
+  border:1px solid #e5dfc3;
+  border-radius:11px;
+  background:#fffaf0;
+}
+.transaction-policy-note strong{font-size:.7rem;color:#5f4d18}
+.transaction-policy-note span{font-size:.62rem;line-height:1.45;color:#766a48}
