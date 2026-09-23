@@ -470,10 +470,34 @@ export function ReferralPanel({ session, isInstructor=false }: { session: Growth
   }
   useEffect(()=>{void load().catch(()=>{});},[session.access_token]);
 
+  function referralLink() {
+    if (!code) return '';
+    return window.location.origin + '/?ref=' + encodeURIComponent(code);
+  }
+
   async function copy(){
     if(!code)return;
-    try{await navigator.clipboard.writeText(code);setMessage('Kode referral disalin.');}
+    const link=referralLink();
+    try{await navigator.clipboard.writeText(link);setMessage('Link referral disalin.');}
     catch{setMessage('Kode referral: '+code);}
+  }
+
+  async function share(){
+    if(!code)return;
+    const link=referralLink();
+    if(navigator.share){
+      try{
+        await navigator.share({
+          title:'GuruLes',
+          text:'Gabung di GuruLes dengan kode referral saya '+code,
+          url:link
+        });
+        return;
+      }catch{
+        return;
+      }
+    }
+    await copy();
   }
 
   return (
@@ -483,7 +507,11 @@ export function ReferralPanel({ session, isInstructor=false }: { session: Growth
         <h3>Ajak pengguna GuruLes</h3>
         <p>{isInstructor?'Setiap 3 referral memberi Boost profil 30 hari.':'Bagikan GuruLes agar komunitas pengajar dan pelajar semakin besar.'}</p>
       </div>
-      <div className="referral-code"><strong>{code||'...'}</strong><button className="button secondary small" onClick={()=>void copy()}>Salin</button></div>
+      <div className="referral-code">
+        <strong>{code||'...'}</strong>
+        <button className="button secondary small" onClick={()=>void copy()}>Salin Link</button>
+        <button className="button primary small" onClick={()=>void share()}>Bagikan</button>
+      </div>
       <span className="referral-count">{count} referral berhasil</span>
       {message&&<small className="form-success">{message}</small>}
     </div>
