@@ -15,6 +15,14 @@ import {
   InstructorAvailabilityManager,
   ReviewForm,
 } from './marketplace-v2';
+import {
+  EMPTY_LEARNING_LOCATION,
+  LearningLocation,
+  LocationFilter,
+  LocationScope,
+  locationScore,
+  matchesLocationScope,
+} from './location-filter';
 
 const SUPABASE_URL = 'https://ikumhfuaqqgqrexemkwn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nQhV0S4__E_3OgwrhB_QiQ_kDOc9j-E';
@@ -220,7 +228,25 @@ function App() {
     }
   });
   const [category, setCategory] = useState('Semua');
-  const [city, setCity] = useState('Semua');
+  const [learningLocation, setLearningLocation] = useState<LearningLocation>(() => {
+    try {
+      const saved = localStorage.getItem('gurules_learning_location');
+      return saved
+        ? { ...EMPTY_LEARNING_LOCATION, ...(JSON.parse(saved) as LearningLocation) }
+        : EMPTY_LEARNING_LOCATION;
+    } catch {
+      return EMPTY_LEARNING_LOCATION;
+    }
+  });
+  const [locationScope, setLocationScope] = useState<LocationScope>(() => {
+    try {
+      return localStorage.getItem('gurules_learning_location')
+        ? 'nearby'
+        : 'all';
+    } catch {
+      return 'all';
+    }
+  });
   const [showLogin, setShowLogin] = useState(false);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -440,17 +466,10 @@ function App() {
     [listings]
   );
 
-  const cities = useMemo(
-    () => [
-      'Semua',
-      ...Array.from(new Set(listings.map(item => item.city))).sort(),
-    ],
-    [listings]
-  );
-
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return listings.filter(item => {
+
+    const matches = listings.filter(item => {
       const matchesText =
         !needle ||
         [
@@ -469,10 +488,25 @@ function App() {
           .includes(needle);
       const matchesCategory =
         category === 'Semua' || item.category === category;
-      const matchesCity = city === 'Semua' || item.city === city;
-      return matchesText && matchesCategory && matchesCity;
+      const matchesRegion = matchesLocationScope(
+        item,
+        learningLocation,
+        locationScope
+      );
+
+      return matchesText && matchesCategory && matchesRegion;
     });
-  }, [listings, query, category, city]);
+
+    if (locationScope === 'nearby') {
+      return [...matches].sort(
+        (a, b) =>
+          locationScore(b, learningLocation) -
+          locationScore(a, learningLocation)
+      );
+    }
+
+    return matches;
+  }, [listings, query, category, learningLocation, locationScope]);
 
   function openRegister() {
     setShowLogin(false);
