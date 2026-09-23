@@ -1776,7 +1776,12 @@ function App() {
               <div hidden={dashboardTab !== 'payment'}>
                 <AdminPaymentSettings
                   session={session}
-                  onFeeChanged={setPlatformFeePercent}
+                  onFeeChanged={fee => {
+                    setPlatformFeePercent(fee);
+                    void loadGrowthSettings(session.access_token)
+                      .then(setGrowthSettings)
+                      .catch(() => undefined);
+                  }}
                 />
               </div>
 
