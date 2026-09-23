@@ -765,8 +765,6 @@ export function ChatInbox({
     void load().catch(() => undefined);
   }, [session.access_token]);
 
-  if (items.length === 0) return null;
-
   const titleFor = (conversation: Conversation) => {
     const listing = listings.find(item => item.id === conversation.listing_id);
     if (role === 'instructor') return 'Calon murid · ' + (listing?.title || 'Layanan');
@@ -782,7 +780,12 @@ export function ChatInbox({
         </div>
         <span className="result-count">{items.length} percakapan</span>
       </div>
-      <div className="inbox-list">
+      {items.length === 0 ? (
+        <div className="feature-empty">
+          Belum ada percakapan. Gunakan tombol “Tanya” pada kartu pengajar untuk memulai chat.
+        </div>
+      ) : (
+        <div className="inbox-list">
         {items.slice(0, 8).map(item => (
           <button className="inbox-item" key={item.id} onClick={() => setActive(item)}>
             <span>💬</span>
@@ -798,7 +801,8 @@ export function ChatInbox({
             <b>›</b>
           </button>
         ))}
-      </div>
+        </div>
+      )}
       {active && (
         <ChatWindow
           session={session}
@@ -979,7 +983,6 @@ export function FavoritesPanel({
   }, [session.access_token]);
 
   const favorites = listings.filter(item => ids.includes(item.id));
-  if (favorites.length === 0) return null;
 
   return (
     <div className="market-feature-panel">
@@ -990,7 +993,12 @@ export function FavoritesPanel({
         </div>
         <span className="result-count">{favorites.length}</span>
       </div>
-      <div className="favorite-list">
+      {favorites.length === 0 ? (
+        <div className="feature-empty">
+          Belum ada pengajar favorit. Tekan ikon ♡ pada kartu pengajar untuk menyimpan.
+        </div>
+      ) : (
+        <div className="favorite-list">
         {favorites.map(item => (
           <div className="favorite-list-item" key={item.id}>
             <div>
@@ -1002,7 +1010,8 @@ export function FavoritesPanel({
             </button>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
