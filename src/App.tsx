@@ -3078,6 +3078,15 @@ function App() {
                     </label>
                     <div className="register-note">
                       Profil pengajar akan tampil setelah diverifikasi Admin.
+                      {growthSettings?.launch_mode && (
+                        <>
+                          {' '}🎉 Program peluncuran aktif: maksimal{' '}
+                          {growthSettings.founding_teacher_limit || 1000} pengajar
+                          awal berpeluang mendapat badge Pengajar Perintis dan
+                          bebas fee selama{' '}
+                          {growthSettings.founding_free_months || 12} bulan.
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
