@@ -595,6 +595,27 @@ export function BookingTransactionControls({
         )}
 
       {isAdmin &&
+        booking.status === 'cancelled' &&
+        payment?.payment_status === 'refund_pending' && (
+          <button
+            className="button primary small"
+            disabled={busy}
+            onClick={() => {
+              const refundReference = window.prompt(
+                'Masukkan referensi refund:'
+              );
+              if (refundReference?.trim()) {
+                void action('mark_refund', {
+                  refund_reference: refundReference.trim(),
+                });
+              }
+            }}
+          >
+            Tandai Refund Selesai
+          </button>
+        )}
+
+      {isAdmin &&
         booking.status === 'completed' &&
         payment?.payout_status === 'eligible' && (
           <button
