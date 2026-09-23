@@ -979,13 +979,16 @@ function App() {
             </div>
           </div>
 
-          <div className="live-card">
-            <span className="live-dot">● LIVE</span>
-            <strong>{loading ? '...' : listings.length}</strong>
-            <p>pengajar aktif dari database GuruLes</p>
-            <small>
-              Daftar ini sekarang diperbarui otomatis setelah verifikasi admin.
-            </small>
+          <div className="hero-media" aria-label="Ilustrasi layanan GuruLes">
+            <img
+              src="/gurules-hero.webp"
+              alt="Guru mengajar, pelatih renang, dan pelatih musik di GuruLes"
+            />
+            <div className="hero-media-shine" aria-hidden="true" />
+            <div className="hero-media-meta">
+              <span className="live-dot">● LIVE</span>
+              <strong>{loading ? '...' : listings.length} pengajar aktif</strong>
+            </div>
           </div>
         </section>
 
