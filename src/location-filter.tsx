@@ -215,7 +215,13 @@ export function LocationFilter({
       longitude: draft.longitude,
     };
     onSave(next);
-    onScopeChange(next.regency || next.province ? 'nearby' : 'all');
+    onScopeChange(
+      next.regency ||
+        next.province ||
+        (next.latitude != null && next.longitude != null)
+        ? 'nearby'
+        : 'all'
+    );
     setOpen(false);
   }
 
@@ -326,12 +332,13 @@ export function LocationFilter({
                   list="gurules-provinces"
                   value={draft.province}
                   onChange={event =>
-                    setDraft({
+                    setDraft(current => ({
+                      ...current,
                       province: event.target.value,
                       regency: '',
                       district: '',
                       village: '',
-                    })
+                    }))
                   }
                   placeholder="Contoh: Jawa Tengah"
                 />
