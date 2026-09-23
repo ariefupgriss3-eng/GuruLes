@@ -930,6 +930,10 @@ function App() {
           ? 'Murid'
           : '';
 
+  useEffect(() => {
+    setDashboardTab('summary');
+  }, [session?.user.id, isAdmin, profile?.role]);
+
   const dashboardTabs = isAdmin
     ? [
         { id: 'summary', icon: '📊', label: 'Ringkasan' },
@@ -2127,8 +2131,18 @@ function App() {
         <a href="#pengajar"><span>🔎</span><small>Cari</small></a>
         {session ? (
           <>
-            <a href="#akun"><span>📋</span><small>Pesanan</small></a>
-            <a href="#akun"><span>👤</span><small>Akun</small></a>
+            <button
+              onClick={() => openDashboardTab('orders')}
+              aria-label="Buka pesanan"
+            >
+              <span>📋</span><small>Pesanan</small>
+            </button>
+            <button
+              onClick={() => openDashboardTab('summary')}
+              aria-label="Buka akun"
+            >
+              <span>👤</span><small>Akun</small>
+            </button>
           </>
         ) : (
           <>
