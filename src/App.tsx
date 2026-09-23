@@ -1296,6 +1296,14 @@ function App() {
 
             {isAdmin ? (
               <>
+                <BusinessDashboard
+                  session={session}
+                  role="admin"
+                  bookings={bookings}
+                  totalUsers={adminProfiles.length}
+                  totalInstructors={adminListings.length}
+                />
+
                 <div className="admin-panel">
                 <div className="admin-summary">
                   <strong>{adminListings.length}</strong>
@@ -1515,6 +1523,28 @@ function App() {
                       : 'Pilih guru atau pelatih terverifikasi langsung dari akun Anda.'}
                   </p>
                 </div>
+
+                {profile?.role === 'instructor' && (
+                  <>
+                    <BusinessDashboard
+                      session={session}
+                      role="instructor"
+                      bookings={bookings}
+                      rating={Number(ownListing?.average_rating || 0)}
+                    />
+                    {ownListing && (
+                      <InstructorAvailabilityManager
+                        session={session}
+                        instructorId={profile.id}
+                      />
+                    )}
+                    <ChatInbox
+                      session={session}
+                      listings={listings}
+                      role="instructor"
+                    />
+                  </>
+                )}
 
                 {profile?.role === 'instructor' && (
                   <div className="branding-panel">
@@ -1823,6 +1853,21 @@ function App() {
                       </div>
                     )}
                   </div>
+                )}
+
+                {(profile?.role === 'parent' || profile?.role === 'student') && (
+                  <>
+                    <FavoritesPanel
+                      session={session}
+                      listings={listings}
+                      onBook={item => beginBooking(item as Listing)}
+                    />
+                    <ChatInbox
+                      session={session}
+                      listings={listings}
+                      role={profile.role}
+                    />
+                  </>
                 )}
 
                 <div className="booking-history">
