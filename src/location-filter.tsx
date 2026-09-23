@@ -5,6 +5,8 @@ export type LearningLocation = {
   district: string;
   regency: string;
   province: string;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 type RegionListing = {
@@ -13,6 +15,8 @@ type RegionListing = {
   regency: string | null;
   province: string | null;
   city: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type LocationScope = 'nearby' | 'regency' | 'province' | 'all';
@@ -22,6 +26,8 @@ export const EMPTY_LEARNING_LOCATION: LearningLocation = {
   district: '',
   regency: '',
   province: '',
+  latitude: null,
+  longitude: null,
 };
 
 export function normalizeRegion(value: string | null | undefined) {
@@ -29,6 +35,26 @@ export function normalizeRegion(value: string | null | undefined) {
     .trim()
     .toLocaleLowerCase('id-ID')
     .replace(/\s+/g, ' ');
+}
+
+export function distanceKm(
+  aLat: number | null | undefined,
+  aLng: number | null | undefined,
+  bLat: number | null | undefined,
+  bLng: number | null | undefined
+) {
+  if (
+    aLat == null || aLng == null || bLat == null || bLng == null ||
+    ![aLat, aLng, bLat, bLng].every(Number.isFinite)
+  ) return null;
+  const rad = (value: number) => (value * Math.PI) / 180;
+  const earth = 6371;
+  const dLat = rad(bLat - aLat);
+  const dLng = rad(bLng - aLng);
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return earth * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
 export function locationScore(
@@ -106,6 +132,7 @@ export function LocationFilter({
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<LearningLocation>(value);
+  const [gpsMessage, setGpsMessage] = useState('');
 
   const provinces = useMemo(
     () => unique(listings.map(item => item.province)),
@@ -168,7 +195,8 @@ export function LocationFilter({
   );
 
   const hasLocation = Boolean(
-    value.village || value.district || value.regency || value.province
+    value.village || value.district || value.regency || value.province ||
+    (value.latitude != null && value.longitude != null)
   );
 
   function editLocation() {
@@ -183,9 +211,17 @@ export function LocationFilter({
       district: draft.district.trim(),
       regency: draft.regency.trim(),
       province: draft.province.trim(),
+      latitude: draft.latitude,
+      longitude: draft.longitude,
     };
     onSave(next);
-    onScopeChange(next.regency || next.province ? 'nearby' : 'all');
+    onScopeChange(
+      next.regency ||
+        next.province ||
+        (next.latitude != null && next.longitude != null)
+        ? 'nearby'
+        : 'all'
+    );
     setOpen(false);
   }
 
@@ -257,6 +293,38 @@ export function LocationFilter({
               </button>
             </div>
 
+            <div className="gps-location-box">
+              <button
+                className="button secondary"
+                type="button"
+                onClick={() => {
+                  setGpsMessage('');
+                  if (!navigator.geolocation) {
+                    setGpsMessage('Perangkat ini tidak mendukung lokasi GPS.');
+                    return;
+                  }
+                  navigator.geolocation.getCurrentPosition(
+                    position => {
+                      setDraft(current => ({
+                        ...current,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                      }));
+                      setGpsMessage('✓ Lokasi perangkat aktif untuk perhitungan jarak.');
+                    },
+                    () => setGpsMessage('Izin lokasi tidak diberikan. Anda tetap dapat memilih wilayah manual.'),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+                  );
+                }}
+              >
+                📍 Gunakan Lokasi Perangkat
+              </button>
+              {(draft.latitude != null && draft.longitude != null) && (
+                <span>GPS aktif</span>
+              )}
+              {gpsMessage && <small>{gpsMessage}</small>}
+            </div>
+
             <div className="location-fields">
               <label>
                 Provinsi
@@ -264,12 +332,13 @@ export function LocationFilter({
                   list="gurules-provinces"
                   value={draft.province}
                   onChange={event =>
-                    setDraft({
+                    setDraft(current => ({
+                      ...current,
                       province: event.target.value,
                       regency: '',
                       district: '',
                       village: '',
-                    })
+                    }))
                   }
                   placeholder="Contoh: Jawa Tengah"
                 />
@@ -346,6 +415,8 @@ export function LocationFilter({
                     district: '',
                     regency: '',
                     province: '',
+                    latitude: null,
+                    longitude: null,
                   })
                 }
               >

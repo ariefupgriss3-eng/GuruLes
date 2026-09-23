@@ -32,6 +32,8 @@ export type MarketplaceBooking = {
   session_price: number;
   platform_fee_amount: number;
   instructor_net_amount: number;
+  package_sessions_total?: number;
+  package_sessions_completed?: number;
 };
 
 type AvailabilityRow = {
@@ -379,19 +381,32 @@ export function BookingAvailabilityPicker({
 
       const from = new Date();
       const to = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
-      const occupied = (await marketApi(
-        '/rest/v1/busy_slots?instructor_id=eq.' +
-          encodeURIComponent(instructorId) +
-          '&scheduled_at=gte.' +
-          encodeURIComponent(from.toISOString()) +
-          '&scheduled_at=lt.' +
-          encodeURIComponent(to.toISOString()) +
-          '&select=scheduled_at&order=scheduled_at.asc'
-      )) as Array<{ scheduled_at: string }>;
+      const [occupiedSingle, occupiedPackage] = await Promise.all([
+        marketApi(
+          '/rest/v1/busy_slots?instructor_id=eq.' +
+            encodeURIComponent(instructorId) +
+            '&scheduled_at=gte.' +
+            encodeURIComponent(from.toISOString()) +
+            '&scheduled_at=lt.' +
+            encodeURIComponent(to.toISOString()) +
+            '&select=scheduled_at&order=scheduled_at.asc'
+        ) as Promise<Array<{ scheduled_at: string }>>,
+        marketApi(
+          '/rest/v1/package_busy_slots?instructor_id=eq.' +
+            encodeURIComponent(instructorId) +
+            '&scheduled_at=gte.' +
+            encodeURIComponent(from.toISOString()) +
+            '&scheduled_at=lt.' +
+            encodeURIComponent(to.toISOString()) +
+            '&select=scheduled_at&order=scheduled_at.asc'
+        ) as Promise<Array<{ scheduled_at: string }>>,
+      ]);
 
       if (alive) {
         setAvailability(rows);
-        setBusySlots(occupied.map(item => item.scheduled_at));
+        setBusySlots(
+          [...occupiedSingle, ...occupiedPackage].map(item => item.scheduled_at)
+        );
         setLoading(false);
       }
     }
@@ -849,6 +864,22 @@ export function BookingTimeline({
     );
   }
 
+  if (booking.status === 'reschedule_requested') {
+    return (
+      <div className="booking-timeline special">
+        🗓️ Perubahan jadwal sedang menunggu persetujuan.
+      </div>
+    );
+  }
+
+  if (booking.status === 'disputed') {
+    return (
+      <div className="booking-timeline special warning">
+        ⚠️ Transaksi sedang ditangani Admin GuruLes.
+      </div>
+    );
+  }
+
   return (
     <div className="booking-timeline">
       {labels.map((label, index) => (
@@ -1032,6 +1063,8 @@ export function BusinessDashboard({
   totalInstructors?: number;
 }) {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [futureFeePercent, setFutureFeePercent] = useState(10);
+  const [launchMode, setLaunchMode] = useState(false);
 
   useEffect(() => {
     void marketApi(
@@ -1041,6 +1074,17 @@ export function BusinessDashboard({
     )
       .then(data => setPayments(data as PaymentRow[]))
       .catch(() => setPayments([]));
+
+    void marketApi(
+      '/functions/v1/gurules-payment-settings',
+      { method: 'GET' },
+      session.access_token
+    )
+      .then(data => {
+        setFutureFeePercent(Number(data?.future_fee_percent || 10));
+        setLaunchMode(Boolean(data?.launch_mode));
+      })
+      .catch(() => undefined);
   }, [session.access_token, bookings]);
 
   const gross = payments
@@ -1057,12 +1101,14 @@ export function BusinessDashboard({
   ).length;
   const payoutReady = payments.filter(item => item.payout_status === 'eligible').length;
   const completed = bookings.filter(item => item.status === 'completed').length;
+  const potentialFee = Math.round(gross * futureFeePercent / 100);
 
   const cards =
     role === 'admin'
       ? [
           ['GMV', rupiah(gross)],
-          ['Fee Platform', rupiah(fees)],
+          [launchMode ? 'Fee Aktual (Launch)' : 'Fee Platform', rupiah(fees)],
+          ['Potensi Fee ' + futureFeePercent + '%', rupiah(potentialFee)],
           ['Pengguna', String(totalUsers)],
           ['Pengajar', String(totalInstructors)],
           ['Verifikasi Bayar', String(pendingPayment)],

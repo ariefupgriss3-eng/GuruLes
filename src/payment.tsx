@@ -13,6 +13,7 @@ export type PaymentBooking = {
   status: string;
   buyer_confirmed_complete: boolean;
   instructor_confirmed_complete: boolean;
+  package_sessions_total?: number;
 };
 
 type Payment = {
@@ -35,10 +36,19 @@ type Settings = {
   lynk_url: string;
   payment_instructions: string;
   payout_instructions: string;
+  launch_mode: boolean;
+  launch_title: string;
+  launch_message: string;
+  future_fee_percent: number;
+  founding_teacher_limit: number;
+  founding_free_months: number;
+  premium_enabled: boolean;
+  boost_enabled: boolean;
+  payment_automation_mode: string;
 };
 
 const defaultSettings: Settings = {
-  platform_fee_percent: 10,
+  platform_fee_percent: 0,
   payment_method_label: 'Lynk.id / QRIS',
   bank_name: '',
   bank_account_name: '',
@@ -48,6 +58,16 @@ const defaultSettings: Settings = {
     'Pembayaran dilakukan setelah pengajar menerima pesanan.',
   payout_instructions:
     'Hak pengajar dicairkan setelah sesi selesai dan transaksi dikonfirmasi.',
+  launch_mode: true,
+  launch_title: 'GuruLes Launching Program',
+  launch_message:
+    '0% biaya platform. Pengajar menerima 100% tarif sesi selama masa peluncuran.',
+  future_fee_percent: 10,
+  founding_teacher_limit: 1000,
+  founding_free_months: 12,
+  premium_enabled: false,
+  boost_enabled: true,
+  payment_automation_mode: 'manual',
 };
 
 async function api(path: string, options: RequestInit = {}, token?: string) {
@@ -79,7 +99,7 @@ export async function getPlatformFeePercent() {
     method: 'GET',
   })) as Partial<Settings>;
   const fee = Number(data.platform_fee_percent);
-  return Number.isFinite(fee) ? fee : 10;
+  return Number.isFinite(fee) ? fee : 0;
 }
 
 export function AdminPaymentSettings({
@@ -137,10 +157,128 @@ export function AdminPaymentSettings({
     <div className="admin-panel">
       <div className="admin-report-head">
         <div>
-          <span className="eyebrow">Pengaturan Pembayaran</span>
-          <h3>Fee & pembayaran Lynk.id GuruLes</h3>
+          <span className="eyebrow">Model Bisnis & Pembayaran</span>
+          <h3>Launching, fee, pertumbuhan & pembayaran</h3>
         </div>
-        <span className="verified">Fee {settings.platform_fee_percent}%</span>
+        <span className="verified">
+          {settings.launch_mode ? '🎉 Launch 0%' : 'Fee ' + settings.platform_fee_percent + '%'}
+        </span>
+      </div>
+
+      <div className="launch-admin-box">
+        <label className="toggle-setting">
+          <input
+            type="checkbox"
+            checked={settings.launch_mode}
+            onChange={event =>
+              setSettings(current => ({
+                ...current,
+                launch_mode: event.target.checked,
+                platform_fee_percent: event.target.checked
+                  ? 0
+                  : current.platform_fee_percent,
+              }))
+            }
+          />
+          <span>
+            <strong>Masa Peluncuran Gratis</strong>
+            <small>Jika aktif, fee transaksi dipaksa 0%.</small>
+          </span>
+        </label>
+
+        <div className="branding-form-grid">
+          <label>
+            Judul program
+            <input
+              value={settings.launch_title}
+              onChange={event =>
+                setSettings(current => ({ ...current, launch_title: event.target.value }))
+              }
+            />
+          </label>
+          <label>
+            Rencana fee setelah launch (%)
+            <input
+              type="number"
+              min="0"
+              max="30"
+              value={settings.future_fee_percent}
+              onChange={event =>
+                setSettings(current => ({
+                  ...current,
+                  future_fee_percent: Number(event.target.value),
+                }))
+              }
+            />
+          </label>
+          <label>
+            Batas Pengajar Perintis
+            <input
+              type="number"
+              min="1"
+              max="100000"
+              value={settings.founding_teacher_limit}
+              onChange={event =>
+                setSettings(current => ({
+                  ...current,
+                  founding_teacher_limit: Number(event.target.value),
+                }))
+              }
+            />
+          </label>
+          <label>
+            Bebas fee Pengajar Perintis (bulan)
+            <input
+              type="number"
+              min="1"
+              max="60"
+              value={settings.founding_free_months}
+              onChange={event =>
+                setSettings(current => ({
+                  ...current,
+                  founding_free_months: Number(event.target.value),
+                }))
+              }
+            />
+          </label>
+          <label className="brand-tagline-field">
+            Pesan program
+            <textarea
+              rows={2}
+              value={settings.launch_message}
+              onChange={event =>
+                setSettings(current => ({ ...current, launch_message: event.target.value }))
+              }
+            />
+          </label>
+        </div>
+
+        <div className="growth-switches">
+          <label>
+            <input
+              type="checkbox"
+              checked={settings.boost_enabled}
+              onChange={event =>
+                setSettings(current => ({ ...current, boost_enabled: event.target.checked }))
+              }
+            />
+            Boost referral aktif
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={settings.premium_enabled}
+              onChange={event =>
+                setSettings(current => ({ ...current, premium_enabled: event.target.checked }))
+              }
+            />
+            Premium berbayar aktif
+          </label>
+        </div>
+        <div className="automation-note">
+          Pembayaran saat ini: <strong>manual via Lynk.id/QRIS</strong>.
+          Mode otomatis baru diaktifkan setelah payment gateway/webhook tersedia.
+        </div>
       </div>
 
       <div className="branding-form-grid">
@@ -152,6 +290,7 @@ export function AdminPaymentSettings({
             max="30"
             step="1"
             value={settings.platform_fee_percent}
+            disabled={settings.launch_mode}
             onChange={event =>
               setSettings(current => ({
                 ...current,
@@ -459,7 +598,8 @@ export function BookingTransactionControls({
           </div>
         )}
 
-      {['paid', 'in_progress'].includes(booking.status) &&
+      {Number(booking.package_sessions_total || 1) === 1 &&
+        ['paid', 'in_progress'].includes(booking.status) &&
         ((instructor && !booking.instructor_confirmed_complete) ||
           (buyer && !booking.buyer_confirmed_complete)) && (
           <button
@@ -468,6 +608,27 @@ export function BookingTransactionControls({
             onClick={() => void action('confirm_complete')}
           >
             Konfirmasi Selesai
+          </button>
+        )}
+
+      {isAdmin &&
+        booking.status === 'cancelled' &&
+        payment?.payment_status === 'refund_pending' && (
+          <button
+            className="button primary small"
+            disabled={busy}
+            onClick={() => {
+              const refundReference = window.prompt(
+                'Masukkan referensi refund:'
+              );
+              if (refundReference?.trim()) {
+                void action('mark_refund', {
+                  refund_reference: refundReference.trim(),
+                });
+              }
+            }}
+          >
+            Tandai Refund Selesai
           </button>
         )}
 

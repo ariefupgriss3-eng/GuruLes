@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   AdminPaymentSettings,
   BookingTransactionControls,
-  getPlatformFeePercent,
 } from './payment';
 import {
   BookingAvailabilityPicker,
@@ -20,9 +19,26 @@ import {
   LearningLocation,
   LocationFilter,
   LocationScope,
+  distanceKm,
   locationScore,
   matchesLocationScope,
 } from './location-filter';
+import {
+  AdminTrustControls,
+  BookingIssueControls,
+  GrowthPackage,
+  GrowthSettings,
+  InstructorGrowthStatus,
+  InstructorPackageManager,
+  LaunchBanner,
+  LearnerPicker,
+  LearnerProfileManager,
+  LessonPackagePicker,
+  NotificationCenter,
+  PackageSessionProgress,
+  ReferralPanel,
+  loadGrowthSettings,
+} from './growth-suite';
 
 const SUPABASE_URL = 'https://ikumhfuaqqgqrexemkwn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nQhV0S4__E_3OgwrhB_QiQ_kDOc9j-E';
@@ -51,6 +67,21 @@ type Listing = {
   cover_url: string | null;
   tagline: string;
   branding_updated_at: string | null;
+  founding_teacher_no: number | null;
+  founding_teacher_since: string | null;
+  founding_free_until: string | null;
+  identity_verified: boolean;
+  credential_verified: boolean;
+  experience_verified: boolean;
+  payout_verified: boolean;
+  completed_sessions: number;
+  response_rate: number | string;
+  premium_plan: string;
+  premium_until: string | null;
+  boost_until: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  service_radius_km: number;
 };
 
 type Session = {
@@ -69,6 +100,8 @@ type Profile = {
   learning_district: string | null;
   learning_regency: string | null;
   learning_province: string | null;
+  learning_latitude: number | null;
+  learning_longitude: number | null;
 };
 
 type Booking = {
@@ -88,6 +121,22 @@ type Booking = {
   instructor_net_amount: number;
   buyer_confirmed_complete: boolean;
   instructor_confirmed_complete: boolean;
+  package_id: string | null;
+  package_sessions_total: number;
+  package_sessions_completed: number;
+  package_discount_percent: number;
+  student_profile_id: string | null;
+  cancellation_reason: string | null;
+  cancelled_by: string | null;
+  cancelled_at: string | null;
+  reschedule_requested_at: string | null;
+  reschedule_requested_by: string | null;
+  proposed_scheduled_at: string | null;
+  dispute_reason: string | null;
+  dispute_opened_at: string | null;
+  dispute_resolved_at: string | null;
+  resolution_note: string | null;
+  no_show_by: string | null;
 };
 
 function rupiah(value: number) {
@@ -96,6 +145,12 @@ function rupiah(value: number) {
     currency: 'IDR',
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function bookingGrossPrice(unitPrice: number, pkg: GrowthPackage | null) {
+  const sessions = pkg?.sessions_count || 1;
+  const discount = pkg?.discount_percent || 0;
+  return Math.round(unitPrice * sessions * (100 - discount) / 100);
 }
 
 function googleMapsUrl(address: string) {
@@ -251,6 +306,10 @@ function App() {
       return 'all';
     }
   });
+  const [distanceRadiusKm, setDistanceRadiusKm] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('gurules_distance_radius'));
+    return [3, 5, 10, 25].includes(saved) ? saved : 10;
+  });
   const [showLogin, setShowLogin] = useState(false);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -274,6 +333,16 @@ function App() {
   const [registerMethod, setRegisterMethod] = useState('Ke rumah');
   const [registerPrice, setRegisterPrice] = useState('50000');
   const [registerError, setRegisterError] = useState('');
+  const [registerReferralCode, setRegisterReferralCode] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search)
+        .get('ref')
+        ?.trim()
+        .toUpperCase() || '';
+    } catch {
+      return '';
+    }
+  });
   const [registerBusy, setRegisterBusy] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -286,11 +355,14 @@ function App() {
     useState<'Ke rumah' | 'Lokasi latihan' | 'Daring'>('Ke rumah');
   const [bookingAddress, setBookingAddress] = useState('');
   const [bookingNotes, setBookingNotes] = useState('');
+  const [selectedPackage, setSelectedPackage] = useState<GrowthPackage | null>(null);
+  const [bookingLearnerId, setBookingLearnerId] = useState('');
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [dashboardTab, setDashboardTab] = useState('summary');
-  const [platformFeePercent, setPlatformFeePercent] = useState(10);
+  const [platformFeePercent, setPlatformFeePercent] = useState(0);
+  const [growthSettings, setGrowthSettings] = useState<GrowthSettings | null>(null);
   const [ownListing, setOwnListing] = useState<Listing | null>(null);
   const [brandAvatarFile, setBrandAvatarFile] = useState<File | null>(null);
   const [brandCoverFile, setBrandCoverFile] = useState<File | null>(null);
@@ -302,6 +374,9 @@ function App() {
   const [profileDistrict, setProfileDistrict] = useState('');
   const [profileRegency, setProfileRegency] = useState('');
   const [profileProvince, setProfileProvince] = useState('');
+  const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
+  const [profileLongitude, setProfileLongitude] = useState<number | null>(null);
+  const [serviceRadiusKm, setServiceRadiusKm] = useState('10');
   const [brandBusy, setBrandBusy] = useState(false);
   const [brandError, setBrandError] = useState('');
   const [brandSuccess, setBrandSuccess] = useState('');
@@ -326,7 +401,7 @@ function App() {
 
   async function loadAdminListings(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
     const data = (await api(
       '/rest/v1/instructor_listings?select=' +
         encodeURIComponent(select) +
@@ -341,7 +416,7 @@ function App() {
     const data = (await api(
       '/rest/v1/bookings?select=' +
         encodeURIComponent(
-          'id,buyer_id,instructor_id,listing_id,created_at,scheduled_at,location_type,private_location,buyer_notes,status,session_price,platform_fee_percent,platform_fee_amount,instructor_net_amount,buyer_confirmed_complete,instructor_confirmed_complete'
+          'id,buyer_id,instructor_id,listing_id,created_at,scheduled_at,location_type,private_location,buyer_notes,status,session_price,platform_fee_percent,platform_fee_amount,instructor_net_amount,buyer_confirmed_complete,instructor_confirmed_complete,package_id,package_sessions_total,package_sessions_completed,package_discount_percent,student_profile_id,cancellation_reason,cancelled_by,cancelled_at,reschedule_requested_at,reschedule_requested_by,proposed_scheduled_at,dispute_reason,dispute_opened_at,dispute_resolved_at,resolution_note,no_show_by'
         ) +
         '&order=created_at.desc',
       {},
@@ -354,7 +429,7 @@ function App() {
     const data = (await api(
       '/rest/v1/profiles?select=' +
         encodeURIComponent(
-          'id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province'
+          'id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude'
         ) +
         '&order=full_name.asc',
       {},
@@ -365,7 +440,7 @@ function App() {
 
   async function loadOwnInstructorListing(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
     const data = (await api(
       '/rest/v1/instructor_listings?instructor_id=eq.' +
         encodeURIComponent(activeSession.user.id) +
@@ -384,6 +459,9 @@ function App() {
     setProfileDistrict(listing?.district || '');
     setProfileRegency(listing?.regency || '');
     setProfileProvince(listing?.province || '');
+    setProfileLatitude(listing?.latitude ?? null);
+    setProfileLongitude(listing?.longitude ?? null);
+    setServiceRadiusKm(String(listing?.service_radius_km ?? 10));
     return listing;
   }
 
@@ -399,7 +477,7 @@ function App() {
     const profiles = (await api(
       '/rest/v1/profiles?id=eq.' +
         encodeURIComponent(activeSession.user.id) +
-        '&select=id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province',
+        '&select=id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude',
       {},
       activeSession.access_token
     )) as Profile[];
@@ -417,6 +495,8 @@ function App() {
         district: currentProfile.learning_district || '',
         regency: currentProfile.learning_regency || '',
         province: currentProfile.learning_province || '',
+        latitude: currentProfile.learning_latitude ?? null,
+        longitude: currentProfile.learning_longitude ?? null,
       };
       const accountHasLocation = Object.values(accountLocation).some(Boolean);
 
@@ -454,9 +534,15 @@ function App() {
 
   useEffect(() => {
     void loadPublicListings();
-    void getPlatformFeePercent()
-      .then(setPlatformFeePercent)
-      .catch(() => setPlatformFeePercent(10));
+    void loadGrowthSettings()
+      .then(settings => {
+        setGrowthSettings(settings);
+        setPlatformFeePercent(Number(settings.platform_fee_percent || 0));
+      })
+      .catch(() => {
+        setGrowthSettings(null);
+        setPlatformFeePercent(0);
+      });
     const saved = localStorage.getItem('gurules_session');
     if (!saved) return;
 
@@ -525,20 +611,78 @@ function App() {
         learningLocation,
         locationScope
       );
+      const itemDistance = distanceKm(
+        learningLocation.latitude,
+        learningLocation.longitude,
+        item.latitude,
+        item.longitude
+      );
+      const effectiveRadius = Math.min(
+        distanceRadiusKm,
+        Number(item.service_radius_km || distanceRadiusKm)
+      );
+      const matchesRadius =
+        locationScope !== 'nearby' ||
+        learningLocation.latitude == null ||
+        learningLocation.longitude == null ||
+        itemDistance == null ||
+        itemDistance <= effectiveRadius;
 
-      return matchesText && matchesCategory && matchesRegion;
+      return matchesText && matchesCategory && matchesRegion && matchesRadius;
     });
 
-    if (locationScope === 'nearby') {
-      return [...matches].sort(
-        (a, b) =>
-          locationScore(b, learningLocation) -
-          locationScore(a, learningLocation)
-      );
-    }
+    return [...matches].sort((a, b) => {
+      if (locationScope === 'nearby') {
+        const aDistance = distanceKm(
+          learningLocation.latitude,
+          learningLocation.longitude,
+          a.latitude,
+          a.longitude
+        );
+        const bDistance = distanceKm(
+          learningLocation.latitude,
+          learningLocation.longitude,
+          b.latitude,
+          b.longitude
+        );
+        if (aDistance != null && bDistance != null && aDistance !== bDistance) {
+          return aDistance - bDistance;
+        }
+        if (aDistance != null && bDistance == null) return -1;
+        if (aDistance == null && bDistance != null) return 1;
 
-    return matches;
-  }, [listings, query, category, learningLocation, locationScope]);
+        const regionGap =
+          locationScore(b, learningLocation) -
+          locationScore(a, learningLocation);
+        if (regionGap !== 0) return regionGap;
+      }
+
+      if (growthSettings?.boost_enabled) {
+        const aBoost =
+          a.boost_until && new Date(a.boost_until) > new Date() ? 1 : 0;
+        const bBoost =
+          b.boost_until && new Date(b.boost_until) > new Date() ? 1 : 0;
+        if (aBoost !== bBoost) return bBoost - aBoost;
+      }
+
+      if (growthSettings?.launch_mode) {
+        const aFounding = a.founding_teacher_no ?? Number.MAX_SAFE_INTEGER;
+        const bFounding = b.founding_teacher_no ?? Number.MAX_SAFE_INTEGER;
+        if (aFounding !== bFounding) return aFounding - bFounding;
+      }
+
+      return Number(b.average_rating || 0) - Number(a.average_rating || 0);
+    });
+  }, [
+    listings,
+    query,
+    category,
+    learningLocation,
+    locationScope,
+    distanceRadiusKm,
+    growthSettings?.boost_enabled,
+    growthSettings?.launch_mode,
+  ]);
 
   async function saveLearningLocation(location: LearningLocation) {
     setLearningLocation(location);
@@ -566,6 +710,8 @@ function App() {
             learning_district: location.district || null,
             learning_regency: location.regency || null,
             learning_province: location.province || null,
+            learning_latitude: location.latitude,
+            learning_longitude: location.longitude,
           }),
         },
         session.access_token
@@ -579,6 +725,8 @@ function App() {
               learning_district: location.district || null,
               learning_regency: location.regency || null,
               learning_province: location.province || null,
+              learning_latitude: location.latitude,
+              learning_longitude: location.longitude,
             }
           : current
       );
@@ -670,6 +818,7 @@ function App() {
           province:
             registerRole === 'instructor' ? registerProvince.trim() : undefined,
           password: registerPassword,
+          referral_code: registerReferralCode.trim() || undefined,
           category: registerRole === 'instructor' ? registerCategory : undefined,
           title: registerRole === 'instructor' ? registerTitle.trim() : undefined,
           method: registerRole === 'instructor' ? registerMethod : undefined,
@@ -696,6 +845,7 @@ function App() {
       setRegisterProvince('');
       setRegisterPassword('');
       setRegisterConfirmPassword('');
+      setRegisterReferralCode('');
       setRegisterTitle('');
       setRegisterError('');
     } catch (error) {
@@ -766,6 +916,11 @@ function App() {
     setProfileDistrict('');
     setProfileRegency('');
     setProfileProvince('');
+    setProfileLatitude(null);
+    setProfileLongitude(null);
+    setServiceRadiusKm('10');
+    setSelectedPackage(null);
+    setBookingLearnerId('');
     setBrandError('');
     setBrandSuccess('');
     setSelectedListing(null);
@@ -785,6 +940,8 @@ function App() {
     setBookingDateTime('');
     setBookingAddress('');
     setBookingNotes('');
+    setSelectedPackage(null);
+    setBookingLearnerId('');
 
     if (!session) {
       setShowLogin(true);
@@ -831,15 +988,14 @@ function App() {
 
     setBookingBusy(true);
     try {
-      await api(
-        '/rest/v1/bookings',
+      const result = (await api(
+        '/functions/v1/create-booking',
         {
           method: 'POST',
-          headers: { Prefer: 'return=representation' },
           body: JSON.stringify({
-            buyer_id: profile.id,
-            instructor_id: selectedListing.instructor_id,
             listing_id: selectedListing.id,
+            package_id: selectedPackage?.id || null,
+            student_profile_id: bookingLearnerId || null,
             scheduled_at: scheduledDate.toISOString(),
             location_type: bookingLocationType,
             private_location:
@@ -847,18 +1003,17 @@ function App() {
                 ? null
                 : bookingAddress.trim() || null,
             buyer_notes: bookingNotes.trim() || null,
-            status: 'requested',
-            session_price: selectedListing.price_per_session,
-            platform_fee_percent: platformFeePercent,
           }),
         },
         session.access_token
-      );
+      )) as { message?: string };
 
       await loadBookings(session);
       setShowBooking(false);
       setSelectedListing(null);
-      window.alert('Permintaan belajar berhasil dikirim ke pengajar.');
+      setSelectedPackage(null);
+      setBookingLearnerId('');
+      window.alert(result.message || 'Permintaan belajar berhasil dikirim ke pengajar.');
     } catch (error) {
       setBookingError(
         error instanceof Error ? error.message : 'Pemesanan gagal dikirim.'
@@ -901,8 +1056,14 @@ function App() {
     }
 
     const experience = Number(yearsExperience);
+    const radius = Number(serviceRadiusKm);
     if (!Number.isInteger(experience) || experience < 0 || experience > 60) {
       setBrandError('Pengalaman mengajar harus 0 sampai 60 tahun.');
+      return;
+    }
+
+    if (!Number.isInteger(radius) || radius < 1 || radius > 100) {
+      setBrandError('Radius layanan harus 1 sampai 100 km.');
       return;
     }
 
@@ -941,6 +1102,9 @@ function App() {
             district: profileDistrict.trim(),
             regency: profileRegency.trim(),
             province: profileProvince.trim(),
+            latitude: profileLatitude,
+            longitude: profileLongitude,
+            service_radius_km: radius,
             avatar_path: avatarPath,
             cover_path: coverPath,
           }),
@@ -955,6 +1119,9 @@ function App() {
       setProfileDistrict(result.listing.district || '');
       setProfileRegency(result.listing.regency || '');
       setProfileProvince(result.listing.province || '');
+      setProfileLatitude(result.listing.latitude ?? null);
+      setProfileLongitude(result.listing.longitude ?? null);
+      setServiceRadiusKm(String(result.listing.service_radius_km ?? 10));
       setBrandAvatarFile(null);
       setBrandCoverFile(null);
       setBrandAvatarPreview('');
@@ -1059,12 +1226,14 @@ function App() {
           { id: 'orders', icon: '📦', label: 'Pesanan' },
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'schedule', icon: '📅', label: 'Jadwal' },
+          { id: 'growth', icon: '🚀', label: 'Pertumbuhan' },
           { id: 'profile', icon: '👤', label: 'Profil' },
         ]
       : [
           { id: 'summary', icon: '🏠', label: 'Ringkasan' },
           { id: 'orders', icon: '📦', label: 'Pesanan' },
           { id: 'favorites', icon: '❤️', label: 'Favorit' },
+          { id: 'learners', icon: '👨‍👩‍👧', label: 'Pelajar' },
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'find', icon: '🔎', label: 'Cari Guru' },
         ];
@@ -1113,6 +1282,7 @@ function App() {
               </strong>
               <span>{roleLabel}</span>
             </div>
+            <NotificationCenter session={session} />
             <button className="button secondary small" onClick={logout}>
               Keluar
             </button>
@@ -1134,6 +1304,8 @@ function App() {
           </div>
         )}
       </header>
+
+      <LaunchBanner settings={growthSettings} />
 
       <main id="top">
         <section className="hero">
@@ -1255,6 +1427,29 @@ function App() {
             }}
           />
 
+          {locationScope === 'nearby' &&
+            learningLocation.latitude != null &&
+            learningLocation.longitude != null && (
+              <div className="radius-filter">
+                <span>Radius:</span>
+                {[3, 5, 10, 25].map(radius => (
+                  <button
+                    key={radius}
+                    className={distanceRadiusKm === radius ? 'active' : ''}
+                    onClick={() => {
+                      setDistanceRadiusKm(radius);
+                      localStorage.setItem(
+                        'gurules_distance_radius',
+                        String(radius)
+                      );
+                    }}
+                  >
+                    {radius} km
+                  </button>
+                ))}
+              </div>
+            )}
+
           <div className="filters location-aware-filters">
             <label className="search-box">
               <span>⌕</span>
@@ -1373,6 +1568,22 @@ function App() {
                         </span>
                       )}
                     </div>
+                    <div className="teacher-growth-badges">
+                      {item.founding_teacher_no && (
+                        <span className="founding">
+                          🌟 Perintis #{item.founding_teacher_no}
+                        </span>
+                      )}
+                      {item.identity_verified && <span>🪪 Identitas ✓</span>}
+                      {item.credential_verified && <span>🎓 Pendidikan ✓</span>}
+                      {item.experience_verified && <span>💼 Pengalaman ✓</span>}
+                      {item.payout_verified && <span>💳 Rekening ✓</span>}
+                      {growthSettings?.boost_enabled &&
+                        item.boost_until &&
+                        new Date(item.boost_until) > new Date() && (
+                          <span>🚀 Boost</span>
+                        )}
+                    </div>
                   </div>
                 </div>
 
@@ -1391,12 +1602,40 @@ function App() {
                     {item.regency || item.city || item.province || 'Indonesia'}
                   </span>
                   {locationScope === 'nearby' &&
+                    distanceKm(
+                      learningLocation.latitude,
+                      learningLocation.longitude,
+                      item.latitude,
+                      item.longitude
+                    ) != null && (
+                      <span className="teacher-distance">
+                        ≈{' '}
+                        {distanceKm(
+                          learningLocation.latitude,
+                          learningLocation.longitude,
+                          item.latitude,
+                          item.longitude
+                        )!.toFixed(1)}{' '}
+                        km
+                      </span>
+                    )}
+                  {locationScope === 'nearby' &&
+                    distanceKm(
+                      learningLocation.latitude,
+                      learningLocation.longitude,
+                      item.latitude,
+                      item.longitude
+                    ) == null &&
                     locationScore(item, learningLocation) > 0 && (
                       <span className="nearby-match">
                         ✓ Sesuai lokasi Anda
                       </span>
                     )}
                   <span>💼 {item.years_experience} th pengalaman</span>
+                  <span>✅ {item.completed_sessions || 0} sesi selesai</span>
+                  {Number(item.response_rate) > 0 && (
+                    <span>⚡ Respons {Number(item.response_rate).toFixed(0)}%</span>
+                  )}
                   <span>⏱ {item.duration_minutes} menit</span>
                   {Number(item.average_rating) > 0 && (
                     <span>{item.review_count} ulasan</span>
@@ -1489,9 +1728,43 @@ function App() {
                   className="admin-panel"
                   hidden={dashboardTab !== 'instructors'}
                 >
-                <div className="admin-summary">
-                  <strong>{adminListings.length}</strong>
-                  <span>total listing pengajar</span>
+                <div className="admin-growth-summary">
+                  <div>
+                    <strong>{adminListings.length}</strong>
+                    <span>Total listing</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {
+                        adminListings.filter(
+                          item => item.verification_status === 'verified'
+                        ).length
+                      }
+                    </strong>
+                    <span>Terverifikasi</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {
+                        adminListings.filter(
+                          item => item.founding_teacher_no != null
+                        ).length
+                      }
+                    </strong>
+                    <span>Pengajar Perintis</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {Math.max(
+                        0,
+                        Number(growthSettings?.founding_teacher_limit || 1000) -
+                          adminListings.filter(
+                            item => item.founding_teacher_no != null
+                          ).length
+                      )}
+                    </strong>
+                    <span>Sisa kuota perintis</span>
+                  </div>
                 </div>
 
                 <div className="admin-list">
@@ -1506,6 +1779,16 @@ function App() {
                         </span>
                       </div>
                       <div className="admin-actions">
+                        <AdminTrustControls
+                          session={session}
+                          listing={item}
+                          onChanged={() =>
+                            Promise.all([
+                              loadAdminListings(session),
+                              loadPublicListings(),
+                            ]).then(() => undefined)
+                          }
+                        />
                         <span
                           className={'status-pill ' + item.verification_status}
                         >
@@ -1554,7 +1837,12 @@ function App() {
               <div hidden={dashboardTab !== 'payment'}>
                 <AdminPaymentSettings
                   session={session}
-                  onFeeChanged={setPlatformFeePercent}
+                  onFeeChanged={fee => {
+                    setPlatformFeePercent(fee);
+                    void loadGrowthSettings(session.access_token)
+                      .then(setGrowthSettings)
+                      .catch(() => undefined);
+                  }}
                 />
               </div>
 
@@ -1695,6 +1983,19 @@ function App() {
                               isAdmin
                               onChanged={() => loadBookings(session)}
                             />
+                            <PackageSessionProgress
+                              session={session}
+                              booking={booking}
+                              role="admin"
+                              onChanged={() => loadBookings(session)}
+                            />
+                            <BookingIssueControls
+                              session={session}
+                              booking={booking}
+                              role="admin"
+                              isAdmin
+                              onChanged={() => loadBookings(session)}
+                            />
                           </div>
                         </div>
                       );
@@ -1760,6 +2061,9 @@ function App() {
                         bookings={bookings}
                         rating={Number(ownListing?.average_rating || 0)}
                       />
+                      {ownListing && (
+                        <InstructorGrowthStatus listing={ownListing} />
+                      )}
                     </div>
                     <div hidden={dashboardTab !== 'schedule'}>
                       {ownListing ? (
@@ -1779,6 +2083,23 @@ function App() {
                         listings={listings}
                         role="instructor"
                       />
+                    </div>
+                    <div hidden={dashboardTab !== 'growth'}>
+                      {ownListing ? (
+                        <>
+                          <InstructorPackageManager
+                            session={session}
+                            listingId={ownListing.id}
+                            instructorId={profile.id}
+                            unitPrice={ownListing.price_per_session}
+                          />
+                          <ReferralPanel session={session} isInstructor />
+                        </>
+                      ) : (
+                        <div className="status-box">
+                          Profil jasa pengajar belum ditemukan.
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -1944,6 +2265,64 @@ function App() {
                             />
                           </label>
 
+                          <div className="brand-geo-box">
+                            <span>Lokasi layanan (opsional)</span>
+                            <small>
+                              Dipakai untuk perkiraan jarak. Koordinat publik dibulatkan
+                              agar tidak menampilkan titik presisi.
+                            </small>
+                            <button
+                              type="button"
+                              className="button secondary small"
+                              onClick={() => {
+                                if (!navigator.geolocation) {
+                                  setBrandError('Perangkat ini tidak mendukung GPS.');
+                                  return;
+                                }
+                                navigator.geolocation.getCurrentPosition(
+                                  position => {
+                                    setProfileLatitude(position.coords.latitude);
+                                    setProfileLongitude(position.coords.longitude);
+                                    setBrandError('');
+                                    setBrandSuccess(
+                                      'Lokasi layanan berhasil diambil dari perangkat.'
+                                    );
+                                  },
+                                  () =>
+                                    setBrandError(
+                                      'Izin GPS tidak diberikan. Wilayah manual tetap dapat digunakan.'
+                                    ),
+                                  {
+                                    enableHighAccuracy: true,
+                                    timeout: 10000,
+                                    maximumAge: 300000,
+                                  }
+                                );
+                              }}
+                            >
+                              📍 Ambil Lokasi Perangkat
+                            </button>
+                            {profileLatitude != null && profileLongitude != null && (
+                              <b>GPS layanan aktif</b>
+                            )}
+                          </div>
+
+                          <label className="brand-tagline-field">
+                            <span>Radius layanan (km)</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              step="1"
+                              value={serviceRadiusKm}
+                              onChange={event => {
+                                setServiceRadiusKm(event.target.value);
+                                setBrandSuccess('');
+                              }}
+                            />
+                            <small>Rekomendasi awal: 5–15 km untuk layanan ke rumah.</small>
+                          </label>
+
                           <label className="brand-tagline-field">
                             <span>Pengalaman Mengajar (tahun)</span>
                             <input
@@ -2107,6 +2486,10 @@ function App() {
                         onBook={item => beginBooking(item as Listing)}
                       />
                     </div>
+                    <div hidden={dashboardTab !== 'learners'}>
+                      <LearnerProfileManager session={session} />
+                      <ReferralPanel session={session} />
+                    </div>
                     <div hidden={dashboardTab !== 'chat'}>
                       <ChatInbox
                         session={session}
@@ -2188,18 +2571,44 @@ function App() {
                                 {booking.status}
                               </span>
                               {profile && (
-                                <BookingTransactionControls
-                                  session={session}
-                                  booking={booking}
-                                  role={profile.role}
-                                  onChanged={() => loadBookings(session)}
-                                />
+                                <>
+                                  <BookingTransactionControls
+                                    session={session}
+                                    booking={booking}
+                                    role={profile.role}
+                                    onChanged={() => loadBookings(session)}
+                                  />
+                                  <PackageSessionProgress
+                                    session={session}
+                                    booking={booking}
+                                    role={profile.role}
+                                    onChanged={() => loadBookings(session)}
+                                  />
+                                  <BookingIssueControls
+                                    session={session}
+                                    booking={booking}
+                                    role={profile.role}
+                                    onChanged={() => loadBookings(session)}
+                                  />
+                                </>
                               )}
                               <ReviewForm
                                 session={session}
                                 booking={booking}
                                 onReviewed={() => loadPublicListings()}
                               />
+                              {booking.status === 'completed' &&
+                                profile &&
+                                (profile.role === 'parent' ||
+                                  profile.role === 'student') &&
+                                listing && (
+                                  <button
+                                    className="button secondary small"
+                                    onClick={() => beginBooking(listing)}
+                                  >
+                                    🔁 Pesan Lagi
+                                  </button>
+                                )}
                             </div>
                           </div>
                         );
@@ -2297,17 +2706,45 @@ function App() {
               {selectedListing.title} · {selectedListing.city}
             </p>
 
+            <LessonPackagePicker
+              listingId={selectedListing.id}
+              unitPrice={selectedListing.price_per_session}
+              value={selectedPackage}
+              onChange={setSelectedPackage}
+            />
+
+            {growthSettings?.launch_mode && (
+              <div className="launch-free-note">
+                🎉 Masa peluncuran: 0% biaya platform
+              </div>
+            )}
+
             <div className="booking-price-box">
               <div>
-                <span>Tarif sesi</span>
-                <strong>{rupiah(selectedListing.price_per_session)}</strong>
+                <span>
+                  {selectedPackage
+                    ? 'Total paket ' + selectedPackage.sessions_count + 'x'
+                    : 'Tarif sesi'}
+                </span>
+                <strong>
+                  {rupiah(
+                    bookingGrossPrice(
+                      selectedListing.price_per_session,
+                      selectedPackage
+                    )
+                  )}
+                </strong>
               </div>
               <div>
                 <span>Fee GuruLes {platformFeePercent}%</span>
                 <strong>
                   {rupiah(
                     Math.floor(
-                      (selectedListing.price_per_session * platformFeePercent) /
+                      bookingGrossPrice(
+                        selectedListing.price_per_session,
+                        selectedPackage
+                      ) *
+                        platformFeePercent /
                         100
                     )
                   )}
@@ -2317,10 +2754,16 @@ function App() {
                 <span>Diterima pengajar</span>
                 <strong>
                   {rupiah(
-                    selectedListing.price_per_session -
+                    bookingGrossPrice(
+                      selectedListing.price_per_session,
+                      selectedPackage
+                    ) -
                       Math.floor(
-                        (selectedListing.price_per_session *
-                          platformFeePercent) /
+                        bookingGrossPrice(
+                          selectedListing.price_per_session,
+                          selectedPackage
+                        ) *
+                          platformFeePercent /
                           100
                       )
                   )}
@@ -2335,6 +2778,14 @@ function App() {
                 value={bookingDateTime}
                 onChange={setBookingDateTime}
               />
+
+              {session && (
+                <LearnerPicker
+                  session={session}
+                  value={bookingLearnerId}
+                  onChange={setBookingLearnerId}
+                />
+              )}
 
               <label>
                 Metode belajar
@@ -2425,6 +2876,15 @@ function App() {
                   rows={3}
                 />
               </label>
+
+              <div className="transaction-policy-note">
+                <strong>Perlindungan transaksi GuruLes</strong>
+                <span>
+                  Sebelum pembayaran, booking dapat dibatalkan. Setelah pembayaran
+                  terverifikasi, perubahan jadwal harus disetujui kedua pihak.
+                  No-show atau masalah transaksi ditangani melalui sengketa Admin.
+                </span>
+              </div>
 
               {bookingError && (
                 <div className="form-error">{bookingError}</div>
@@ -2549,6 +3009,19 @@ function App() {
                   />
                 </label>
 
+                <label>
+                  Kode referral (opsional)
+                  <input
+                    value={registerReferralCode}
+                    onChange={event =>
+                      setRegisterReferralCode(event.target.value.toUpperCase())
+                    }
+                    placeholder="Contoh: GL1234ABCD"
+                    maxLength={20}
+                  />
+                  <small>Isi bila Anda mendapat kode dari pengguna GuruLes.</small>
+                </label>
+
                 {registerRole === 'instructor' && (
                   <div className="instructor-fields">
                     <div className="section-divider">
@@ -2639,6 +3112,15 @@ function App() {
                     </label>
                     <div className="register-note">
                       Profil pengajar akan tampil setelah diverifikasi Admin.
+                      {growthSettings?.launch_mode && (
+                        <>
+                          {' '}🎉 Program peluncuran aktif: maksimal{' '}
+                          {growthSettings.founding_teacher_limit || 1000} pengajar
+                          awal berpeluang mendapat badge Pengajar Perintis dan
+                          bebas fee selama{' '}
+                          {growthSettings.founding_free_months || 12} bulan.
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
