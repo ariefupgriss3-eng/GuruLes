@@ -4,6 +4,17 @@ import {
   BookingTransactionControls,
   getPlatformFeePercent,
 } from './payment';
+import {
+  BookingAvailabilityPicker,
+  BookingTimeline,
+  BusinessDashboard,
+  ChatInbox,
+  ChatLauncher,
+  FavoriteButton,
+  FavoritesPanel,
+  InstructorAvailabilityManager,
+  ReviewForm,
+} from './marketplace-v2';
 
 const SUPABASE_URL = 'https://ikumhfuaqqgqrexemkwn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nQhV0S4__E_3OgwrhB_QiQ_kDOc9j-E';
@@ -200,6 +211,14 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [publicError, setPublicError] = useState('');
   const [query, setQuery] = useState('');
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('gurules_search_history');
+      return saved ? (JSON.parse(saved) as string[]).slice(0, 6) : [];
+    } catch {
+      return [];
+    }
+  });
   const [category, setCategory] = useState('Semua');
   const [city, setCity] = useState('Semua');
   const [showLogin, setShowLogin] = useState(false);
@@ -395,6 +414,22 @@ function App() {
       localStorage.removeItem('gurules_session');
     }
   }, []);
+
+  useEffect(() => {
+    const needle = query.trim();
+    if (needle.length < 2) return;
+    const timer = window.setTimeout(() => {
+      setSearchHistory(current => {
+        const next = [
+          needle,
+          ...current.filter(item => item.toLowerCase() !== needle.toLowerCase()),
+        ].slice(0, 6);
+        localStorage.setItem('gurules_search_history', JSON.stringify(next));
+        return next;
+      });
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
   const categories = useMemo(
     () => [
