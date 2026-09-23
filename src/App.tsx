@@ -429,31 +429,9 @@ function App() {
           JSON.stringify(accountLocation)
         );
       } else {
-        const localHasLocation = Object.values(learningLocation).some(Boolean);
-        if (localHasLocation) {
-          await api(
-            '/rest/v1/profiles?id=eq.' +
-              encodeURIComponent(currentProfile.id),
-            {
-              method: 'PATCH',
-              headers: { Prefer: 'return=minimal' },
-              body: JSON.stringify({
-                learning_village: learningLocation.village || null,
-                learning_district: learningLocation.district || null,
-                learning_regency: learningLocation.regency || null,
-                learning_province: learningLocation.province || null,
-              }),
-            },
-            activeSession.access_token
-          );
-          setProfile({
-            ...currentProfile,
-            learning_village: learningLocation.village || null,
-            learning_district: learningLocation.district || null,
-            learning_regency: learningLocation.regency || null,
-            learning_province: learningLocation.province || null,
-          });
-        }
+        setLearningLocation(EMPTY_LEARNING_LOCATION);
+        setLocationScope('all');
+        localStorage.removeItem('gurules_learning_location');
       }
     }
 
@@ -776,6 +754,9 @@ function App() {
 
   function logout() {
     localStorage.removeItem('gurules_session');
+    localStorage.removeItem('gurules_learning_location');
+    setLearningLocation(EMPTY_LEARNING_LOCATION);
+    setLocationScope('all');
     setSession(null);
     setProfile(null);
     setIsAdmin(false);
