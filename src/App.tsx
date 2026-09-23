@@ -1630,28 +1630,41 @@ function App() {
 
                 {profile?.role === 'instructor' && (
                   <>
-                    <BusinessDashboard
-                      session={session}
-                      role="instructor"
-                      bookings={bookings}
-                      rating={Number(ownListing?.average_rating || 0)}
-                    />
-                    {ownListing && (
-                      <InstructorAvailabilityManager
+                    <div hidden={dashboardTab !== 'summary'}>
+                      <BusinessDashboard
                         session={session}
-                        instructorId={profile.id}
+                        role="instructor"
+                        bookings={bookings}
+                        rating={Number(ownListing?.average_rating || 0)}
                       />
-                    )}
-                    <ChatInbox
-                      session={session}
-                      listings={listings}
-                      role="instructor"
-                    />
+                    </div>
+                    <div hidden={dashboardTab !== 'schedule'}>
+                      {ownListing ? (
+                        <InstructorAvailabilityManager
+                          session={session}
+                          instructorId={profile.id}
+                        />
+                      ) : (
+                        <div className="status-box">
+                          Profil jasa pengajar belum ditemukan.
+                        </div>
+                      )}
+                    </div>
+                    <div hidden={dashboardTab !== 'chat'}>
+                      <ChatInbox
+                        session={session}
+                        listings={listings}
+                        role="instructor"
+                      />
+                    </div>
                   </>
                 )}
 
                 {profile?.role === 'instructor' && (
-                  <div className="branding-panel">
+                  <div
+                    className="branding-panel"
+                    hidden={dashboardTab !== 'profile'}
+                  >
                     <div className="branding-head">
                       <div>
                         <span className="eyebrow">Profil & Branding Pengajar</span>
@@ -1867,7 +1880,10 @@ function App() {
 
                 {(profile?.role === 'parent' ||
                   profile?.role === 'student') && (
-                  <div className="parent-directory">
+                  <div
+                    className="parent-directory"
+                    hidden={dashboardTab !== 'find'}
+                  >
                     <div className="parent-directory-head">
                       <div>
                         <span className="eyebrow">Daftar Guru / Pengajar</span>
@@ -1961,20 +1977,27 @@ function App() {
 
                 {(profile?.role === 'parent' || profile?.role === 'student') && (
                   <>
-                    <FavoritesPanel
-                      session={session}
-                      listings={listings}
-                      onBook={item => beginBooking(item as Listing)}
-                    />
-                    <ChatInbox
-                      session={session}
-                      listings={listings}
-                      role={profile.role}
-                    />
+                    <div hidden={dashboardTab !== 'favorites'}>
+                      <FavoritesPanel
+                        session={session}
+                        listings={listings}
+                        onBook={item => beginBooking(item as Listing)}
+                      />
+                    </div>
+                    <div hidden={dashboardTab !== 'chat'}>
+                      <ChatInbox
+                        session={session}
+                        listings={listings}
+                        role={profile.role}
+                      />
+                    </div>
                   </>
                 )}
 
-                <div className="booking-history">
+                <div
+                  className="booking-history"
+                  hidden={dashboardTab !== 'orders'}
+                >
                   <div className="booking-history-head">
                     <div>
                       <span className="eyebrow">
