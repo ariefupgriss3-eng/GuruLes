@@ -303,6 +303,10 @@ function App() {
       return 'all';
     }
   });
+  const [distanceRadiusKm, setDistanceRadiusKm] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('gurules_distance_radius'));
+    return [3, 5, 10, 25].includes(saved) ? saved : 10;
+  });
   const [showLogin, setShowLogin] = useState(false);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -595,8 +599,24 @@ function App() {
         learningLocation,
         locationScope
       );
+      const itemDistance = distanceKm(
+        learningLocation.latitude,
+        learningLocation.longitude,
+        item.latitude,
+        item.longitude
+      );
+      const effectiveRadius = Math.min(
+        distanceRadiusKm,
+        Number(item.service_radius_km || distanceRadiusKm)
+      );
+      const matchesRadius =
+        locationScope !== 'nearby' ||
+        learningLocation.latitude == null ||
+        learningLocation.longitude == null ||
+        itemDistance == null ||
+        itemDistance <= effectiveRadius;
 
-      return matchesText && matchesCategory && matchesRegion;
+      return matchesText && matchesCategory && matchesRegion && matchesRadius;
     });
 
     return [...matches].sort((a, b) => {
@@ -629,7 +649,15 @@ function App() {
 
       return 0;
     });
-  }, [listings, query, category, learningLocation, locationScope, growthSettings?.boost_enabled]);
+  }, [
+    listings,
+    query,
+    category,
+    learningLocation,
+    locationScope,
+    distanceRadiusKm,
+    growthSettings?.boost_enabled,
+  ]);
 
   async function saveLearningLocation(location: LearningLocation) {
     setLearningLocation(location);
@@ -1373,6 +1401,29 @@ function App() {
               void saveLearningLocation(location);
             }}
           />
+
+          {locationScope === 'nearby' &&
+            learningLocation.latitude != null &&
+            learningLocation.longitude != null && (
+              <div className="radius-filter">
+                <span>Radius:</span>
+                {[3, 5, 10, 25].map(radius => (
+                  <button
+                    key={radius}
+                    className={distanceRadiusKm === radius ? 'active' : ''}
+                    onClick={() => {
+                      setDistanceRadiusKm(radius);
+                      localStorage.setItem(
+                        'gurules_distance_radius',
+                        String(radius)
+                      );
+                    }}
+                  >
+                    {radius} km
+                  </button>
+                ))}
+              </div>
+            )}
 
           <div className="filters location-aware-filters">
             <label className="search-box">
