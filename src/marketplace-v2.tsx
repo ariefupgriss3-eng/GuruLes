@@ -379,18 +379,19 @@ export function BookingAvailabilityPicker({
 
       const from = new Date();
       const to = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
-      const occupied = (await marketApi('/rest/v1/rpc/get_busy_slots', {
-        method: 'POST',
-        body: JSON.stringify({
-          p_instructor_id: instructorId,
-          p_from: from.toISOString(),
-          p_to: to.toISOString(),
-        }),
-      })) as Array<{ slot: string }>;
+      const occupied = (await marketApi(
+        '/rest/v1/busy_slots?instructor_id=eq.' +
+          encodeURIComponent(instructorId) +
+          '&scheduled_at=gte.' +
+          encodeURIComponent(from.toISOString()) +
+          '&scheduled_at=lt.' +
+          encodeURIComponent(to.toISOString()) +
+          '&select=scheduled_at&order=scheduled_at.asc'
+      )) as Array<{ scheduled_at: string }>;
 
       if (alive) {
         setAvailability(rows);
-        setBusySlots(occupied.map(item => item.slot));
+        setBusySlots(occupied.map(item => item.scheduled_at));
         setLoading(false);
       }
     }
