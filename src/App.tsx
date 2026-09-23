@@ -65,6 +65,10 @@ type Profile = {
   full_name: string;
   city: string | null;
   account_status: string;
+  learning_village: string | null;
+  learning_district: string | null;
+  learning_regency: string | null;
+  learning_province: string | null;
 };
 
 type Booking = {
@@ -350,7 +354,9 @@ function App() {
   async function loadAdminProfiles(activeSession: Session) {
     const data = (await api(
       '/rest/v1/profiles?select=' +
-        encodeURIComponent('id,role,full_name,city,account_status') +
+        encodeURIComponent(
+          'id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province'
+        ) +
         '&order=full_name.asc',
       {},
       activeSession.access_token
@@ -394,13 +400,62 @@ function App() {
     const profiles = (await api(
       '/rest/v1/profiles?id=eq.' +
         encodeURIComponent(activeSession.user.id) +
-        '&select=id,role,full_name,city,account_status',
+        '&select=id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province',
       {},
       activeSession.access_token
     )) as Profile[];
 
     const currentProfile = profiles[0] || null;
     setProfile(currentProfile);
+
+    if (
+      currentProfile &&
+      !adminResult &&
+      (currentProfile.role === 'parent' || currentProfile.role === 'student')
+    ) {
+      const accountLocation: LearningLocation = {
+        village: currentProfile.learning_village || '',
+        district: currentProfile.learning_district || '',
+        regency: currentProfile.learning_regency || '',
+        province: currentProfile.learning_province || '',
+      };
+      const accountHasLocation = Object.values(accountLocation).some(Boolean);
+
+      if (accountHasLocation) {
+        setLearningLocation(accountLocation);
+        setLocationScope('nearby');
+        localStorage.setItem(
+          'gurules_learning_location',
+          JSON.stringify(accountLocation)
+        );
+      } else {
+        const localHasLocation = Object.values(learningLocation).some(Boolean);
+        if (localHasLocation) {
+          await api(
+            '/rest/v1/profiles?id=eq.' +
+              encodeURIComponent(currentProfile.id),
+            {
+              method: 'PATCH',
+              headers: { Prefer: 'return=minimal' },
+              body: JSON.stringify({
+                learning_village: learningLocation.village || null,
+                learning_district: learningLocation.district || null,
+                learning_regency: learningLocation.regency || null,
+                learning_province: learningLocation.province || null,
+              }),
+            },
+            activeSession.access_token
+          );
+          setProfile({
+            ...currentProfile,
+            learning_village: learningLocation.village || null,
+            learning_district: learningLocation.district || null,
+            learning_regency: learningLocation.regency || null,
+            learning_province: learningLocation.province || null,
+          });
+        }
+      }
+    }
 
     if (adminResult) {
       await Promise.all([
@@ -507,6 +562,58 @@ function App() {
 
     return matches;
   }, [listings, query, category, learningLocation, locationScope]);
+
+  async function saveLearningLocation(location: LearningLocation) {
+    setLearningLocation(location);
+    localStorage.setItem(
+      'gurules_learning_location',
+      JSON.stringify(location)
+    );
+
+    if (
+      !session ||
+      !profile ||
+      !['parent', 'student'].includes(profile.role)
+    ) {
+      return;
+    }
+
+    try {
+      await api(
+        '/rest/v1/profiles?id=eq.' + encodeURIComponent(profile.id),
+        {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            learning_village: location.village || null,
+            learning_district: location.district || null,
+            learning_regency: location.regency || null,
+            learning_province: location.province || null,
+          }),
+        },
+        session.access_token
+      );
+
+      setProfile(current =>
+        current
+          ? {
+              ...current,
+              learning_village: location.village || null,
+              learning_district: location.district || null,
+              learning_regency: location.regency || null,
+              learning_province: location.province || null,
+            }
+          : current
+      );
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? 'Lokasi tersimpan di perangkat, tetapi belum tersinkron ke akun: ' +
+              error.message
+          : 'Lokasi tersimpan di perangkat, tetapi belum tersinkron ke akun.'
+      );
+    }
+  }
 
   function openRegister() {
     setShowLogin(false);
@@ -1173,11 +1280,7 @@ function App() {
             scope={locationScope}
             onScopeChange={setLocationScope}
             onSave={location => {
-              setLearningLocation(location);
-              localStorage.setItem(
-                'gurules_learning_location',
-                JSON.stringify(location)
-              );
+              void saveLearningLocation(location);
             }}
           />
 
