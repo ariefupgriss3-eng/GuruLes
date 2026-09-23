@@ -1127,6 +1127,26 @@ function App() {
             </select>
           </div>
 
+          {searchHistory.length > 0 && (
+            <div className="recent-searches">
+              <span>Terakhir dicari:</span>
+              {searchHistory.map(item => (
+                <button key={item} onClick={() => setQuery(item)}>
+                  {item}
+                </button>
+              ))}
+              <button
+                className="clear-search-history"
+                onClick={() => {
+                  setSearchHistory([]);
+                  localStorage.removeItem('gurules_search_history');
+                }}
+              >
+                Hapus
+              </button>
+            </div>
+          )}
+
           {loading && (
             <div className="status-box">Memuat pengajar dari GuruLes...</div>
           )}
