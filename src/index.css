@@ -2314,3 +2314,109 @@ html {
     line-height: 1.38;
   }
 }
+
+
+/* Animated GuruLes hero artwork */
+.hero-media {
+  position: relative;
+  align-self: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.10);
+  box-shadow: 0 24px 70px rgba(6, 38, 24, 0.24);
+  transform-origin: center;
+  animation: heroFloat 5.5s ease-in-out infinite;
+}
+
+.hero-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  transform: scale(1.025);
+  animation: heroPan 10s ease-in-out infinite alternate;
+}
+
+.hero-media-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      105deg,
+      transparent 24%,
+      rgba(255,255,255,0.18) 44%,
+      transparent 62%
+    );
+  transform: translateX(-130%);
+  animation: heroShine 6.8s ease-in-out infinite;
+}
+
+.hero-media-meta {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,0.24);
+  border-radius: 999px;
+  background: rgba(8, 46, 30, 0.72);
+  color: #fff;
+  font-size: 0.72rem;
+  backdrop-filter: blur(10px);
+}
+
+.hero-media-meta strong {
+  font-size: 0.72rem;
+}
+
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.005); }
+}
+
+@keyframes heroPan {
+  0% { transform: scale(1.025) translate3d(-0.5%, 0, 0); }
+  100% { transform: scale(1.055) translate3d(0.8%, -0.4%, 0); }
+}
+
+@keyframes heroShine {
+  0%, 62% { transform: translateX(-130%); opacity: 0; }
+  70% { opacity: 1; }
+  86%, 100% { transform: translateX(130%); opacity: 0; }
+}
+
+@media (max-width: 640px) {
+  .hero-media {
+    margin-top: 12px;
+    border-radius: 16px;
+    animation-duration: 6.5s;
+  }
+
+  .hero-media img {
+    aspect-ratio: 16 / 7.4;
+    object-position: center;
+  }
+
+  .hero-media-meta {
+    left: 8px;
+    bottom: 8px;
+    padding: 5px 8px;
+    font-size: 0.62rem;
+  }
+
+  .hero-media-meta strong {
+    font-size: 0.62rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-media,
+  .hero-media img,
+  .hero-media-shine {
+    animation: none !important;
+  }
+}
