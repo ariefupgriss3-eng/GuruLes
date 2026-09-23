@@ -1167,7 +1167,21 @@ function App() {
             </span>
           </div>
 
-          <div className="filters">
+          <LocationFilter
+            listings={listings}
+            value={learningLocation}
+            scope={locationScope}
+            onScopeChange={setLocationScope}
+            onSave={location => {
+              setLearningLocation(location);
+              localStorage.setItem(
+                'gurules_learning_location',
+                JSON.stringify(location)
+              );
+            }}
+          />
+
+          <div className="filters location-aware-filters">
             <label className="search-box">
               <span>⌕</span>
               <input
@@ -1188,15 +1202,6 @@ function App() {
               ))}
             </select>
 
-            <select
-              aria-label="Filter lokasi"
-              value={city}
-              onChange={event => setCity(event.target.value)}
-            >
-              {cities.map(item => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
           </div>
 
           {searchHistory.length > 0 && (
@@ -1311,6 +1316,12 @@ function App() {
                     📍 {item.district ? item.district + ', ' : ''}
                     {item.regency || item.city || item.province || 'Indonesia'}
                   </span>
+                  {locationScope === 'nearby' &&
+                    locationScore(item, learningLocation) > 0 && (
+                      <span className="nearby-match">
+                        ✓ Sesuai lokasi Anda
+                      </span>
+                    )}
                   <span>💼 {item.years_experience} th pengalaman</span>
                   <span>⏱ {item.duration_minutes} menit</span>
                   {Number(item.average_rating) > 0 && (
