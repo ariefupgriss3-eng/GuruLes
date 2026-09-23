@@ -41,6 +41,7 @@ type Settings = {
   launch_message: string;
   future_fee_percent: number;
   founding_teacher_limit: number;
+  founding_free_months: number;
   premium_enabled: boolean;
   boost_enabled: boolean;
   payment_automation_mode: string;
@@ -63,6 +64,7 @@ const defaultSettings: Settings = {
     '0% biaya platform. Pengajar menerima 100% tarif sesi selama masa peluncuran.',
   future_fee_percent: 10,
   founding_teacher_limit: 1000,
+  founding_free_months: 12,
   premium_enabled: false,
   boost_enabled: true,
   payment_automation_mode: 'manual',
@@ -220,6 +222,21 @@ export function AdminPaymentSettings({
                 setSettings(current => ({
                   ...current,
                   founding_teacher_limit: Number(event.target.value),
+                }))
+              }
+            />
+          </label>
+          <label>
+            Bebas fee Pengajar Perintis (bulan)
+            <input
+              type="number"
+              min="1"
+              max="60"
+              value={settings.founding_free_months}
+              onChange={event =>
+                setSettings(current => ({
+                  ...current,
+                  founding_free_months: Number(event.target.value),
                 }))
               }
             />
