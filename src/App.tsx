@@ -1167,12 +1167,14 @@ function App() {
           { id: 'orders', icon: '📦', label: 'Pesanan' },
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'schedule', icon: '📅', label: 'Jadwal' },
+          { id: 'growth', icon: '🚀', label: 'Pertumbuhan' },
           { id: 'profile', icon: '👤', label: 'Profil' },
         ]
       : [
           { id: 'summary', icon: '🏠', label: 'Ringkasan' },
           { id: 'orders', icon: '📦', label: 'Pesanan' },
           { id: 'favorites', icon: '❤️', label: 'Favorit' },
+          { id: 'learners', icon: '👨‍👩‍👧', label: 'Pelajar' },
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'find', icon: '🔎', label: 'Cari Guru' },
         ];
@@ -1221,6 +1223,7 @@ function App() {
               </strong>
               <span>{roleLabel}</span>
             </div>
+            <NotificationCenter session={session} />
             <button className="button secondary small" onClick={logout}>
               Keluar
             </button>
@@ -1242,6 +1245,8 @@ function App() {
           </div>
         )}
       </header>
+
+      <LaunchBanner settings={growthSettings} />
 
       <main id="top">
         <section className="hero">
