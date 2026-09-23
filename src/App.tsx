@@ -71,6 +71,8 @@ type Listing = {
   founding_teacher_since: string | null;
   identity_verified: boolean;
   credential_verified: boolean;
+  experience_verified: boolean;
+  payout_verified: boolean;
   completed_sessions: number;
   response_rate: number | string;
   premium_plan: string;
@@ -389,7 +391,7 @@ function App() {
 
   async function loadAdminListings(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,identity_verified,credential_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
     const data = (await api(
       '/rest/v1/instructor_listings?select=' +
         encodeURIComponent(select) +
@@ -428,7 +430,7 @@ function App() {
 
   async function loadOwnInstructorListing(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,identity_verified,credential_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
     const data = (await api(
       '/rest/v1/instructor_listings?instructor_id=eq.' +
         encodeURIComponent(activeSession.user.id) +
