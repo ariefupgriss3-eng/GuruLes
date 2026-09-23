@@ -2495,3 +2495,630 @@ html {
     font-size: 0.56rem;
   }
 }
+
+
+/* Marketplace core v2 */
+.recent-searches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: -8px 0 18px;
+  color: #6a776f;
+  font-size: 0.74rem;
+}
+
+.recent-searches button {
+  padding: 6px 9px;
+  border: 1px solid #e0e8e3;
+  border-radius: 999px;
+  background: #fff;
+  color: #365244;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.recent-searches .clear-search-history {
+  border: 0;
+  background: transparent;
+  color: #8b5b4a;
+  font-weight: 800;
+}
+
+.favorite-button {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  color: #557064;
+  font-size: 1.25rem;
+  line-height: 1;
+  box-shadow: 0 7px 20px rgba(22,58,38,0.10);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.favorite-button.active {
+  color: #e04b4b;
+}
+
+.teacher-card {
+  position: relative;
+}
+
+.teacher-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.market-feature-panel,
+.business-dashboard {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid #dae5de;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.feature-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.feature-head h3 {
+  margin: 4px 0 0;
+  font-size: 1.22rem;
+}
+
+.availability-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.availability-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 8px;
+  border-radius: 999px;
+  background: #eef7f2;
+  color: #315947;
+  font-size: 0.72rem;
+}
+
+.availability-chip button {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15,107,69,0.10);
+  color: #315947;
+  cursor: pointer;
+}
+
+.feature-empty,
+.feature-message {
+  color: #6b786f;
+  font-size: 0.76rem;
+}
+
+.availability-form {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 1fr 0.9fr auto;
+  gap: 8px;
+}
+
+.availability-form select,
+.availability-form input,
+.slot-picker select,
+.chat-compose input,
+.review-form textarea {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid #d8e3dc;
+  border-radius: 10px;
+  background: #fff;
+  color: #2e4337;
+  outline: none;
+}
+
+.slot-picker {
+  display: grid;
+  gap: 7px;
+  color: #34443a;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.slot-picker small {
+  color: #748078;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.slot-box {
+  padding: 12px;
+  border-radius: 12px;
+  background: #eef7f2;
+  color: #315947;
+  font-size: 0.8rem;
+}
+
+.slot-box.warning {
+  background: #fff4d9;
+  color: #7d6018;
+}
+
+.inbox-list {
+  display: grid;
+  gap: 8px;
+}
+
+.inbox-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #e4ebe6;
+  border-radius: 12px;
+  background: #fbfdfb;
+  color: #2e4337;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inbox-item > span {
+  font-size: 1.2rem;
+}
+
+.inbox-item div {
+  display: grid;
+  gap: 2px;
+}
+
+.inbox-item small {
+  color: #78837c;
+  font-size: 0.68rem;
+}
+
+.chat-backdrop {
+  z-index: 90;
+}
+
+.chat-modal {
+  display: grid;
+  grid-template-rows: auto minmax(260px, 55vh) auto;
+  width: min(520px, 100%);
+  max-height: 88vh;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 30px 90px rgba(0,0,0,0.25);
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px;
+  border-bottom: 1px solid #e9eeeb;
+}
+
+.chat-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.chat-head span {
+  color: #5f6d64;
+  font-size: 0.72rem;
+}
+
+.chat-head strong {
+  font-size: 0.96rem;
+}
+
+.chat-head button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: #f0f3f1;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 14px;
+  background: #f6f8f7;
+}
+
+.chat-empty {
+  margin: auto;
+  max-width: 320px;
+  color: #7a857f;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.chat-bubble {
+  max-width: 82%;
+  padding: 9px 11px;
+  border-radius: 14px;
+}
+
+.chat-bubble p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.chat-bubble small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.6rem;
+  opacity: 0.68;
+}
+
+.chat-bubble.mine {
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+  background: #176a47;
+  color: #fff;
+}
+
+.chat-bubble.theirs {
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+  background: #fff;
+  color: #34443a;
+  box-shadow: 0 4px 12px rgba(25,61,41,0.06);
+}
+
+.chat-compose {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 11px;
+  border-top: 1px solid #e9eeeb;
+}
+
+.booking-timeline {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(46px, 1fr));
+  width: min(100%, 540px);
+  gap: 3px;
+  padding: 8px 0 3px;
+}
+
+.timeline-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  color: #a0aaa4;
+  text-align: center;
+}
+
+.timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: calc(50% + 11px);
+  width: calc(100% - 22px);
+  height: 2px;
+  background: #e2e7e4;
+}
+
+.timeline-step span {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #edf0ee;
+  font-size: 0.6rem;
+  font-weight: 900;
+}
+
+.timeline-step small {
+  font-size: 0.54rem;
+  white-space: nowrap;
+}
+
+.timeline-step.done,
+.timeline-step.active {
+  color: #17663f;
+}
+
+.timeline-step.done span,
+.timeline-step.active span {
+  background: #17663f;
+  color: #fff;
+}
+
+.timeline-step.done:not(:last-child)::after {
+  background: #69aa86;
+}
+
+.booking-timeline.cancelled {
+  display: block;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: #fff0f0;
+  color: #8b3232;
+  font-size: 0.7rem;
+}
+
+.admin-booking-money .booking-timeline,
+.booking-money .booking-timeline {
+  margin-bottom: 4px;
+}
+
+.review-form {
+  display: grid;
+  gap: 7px;
+  width: min(100%, 360px);
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #e6ebe8;
+  border-radius: 12px;
+  background: #fbfdfb;
+  text-align: left;
+}
+
+.review-form strong {
+  font-size: 0.78rem;
+}
+
+.rating-choice {
+  display: flex;
+  gap: 2px;
+}
+
+.rating-choice button {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: #d2d8d4;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.rating-choice button.active {
+  color: #f3af19;
+}
+
+.review-form textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-size: 0.76rem;
+}
+
+.review-done {
+  color: #17663f !important;
+  font-weight: 800;
+}
+
+.favorite-list {
+  display: grid;
+  gap: 8px;
+}
+
+.favorite-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid #e4ebe6;
+  border-radius: 12px;
+  background: #fbfdfb;
+}
+
+.favorite-list-item > div {
+  display: grid;
+  gap: 2px;
+}
+
+.favorite-list-item small {
+  color: #748078;
+  font-size: 0.7rem;
+}
+
+.business-dashboard {
+  background: linear-gradient(180deg, #fff, #f8fbf9);
+}
+
+.business-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.business-metrics > div {
+  padding: 12px;
+  border: 1px solid #e4ebe6;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.business-metrics small,
+.business-metrics strong {
+  display: block;
+}
+
+.business-metrics small {
+  min-height: 2.1em;
+  color: #738078;
+  font-size: 0.67rem;
+}
+
+.business-metrics strong {
+  margin-top: 5px;
+  color: #145e3b;
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .business-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .availability-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .availability-form .button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .recent-searches {
+    gap: 5px;
+    margin: -6px 2px 12px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .recent-searches::-webkit-scrollbar {
+    display: none;
+  }
+
+  .recent-searches > span,
+  .recent-searches button {
+    flex: 0 0 auto;
+  }
+
+  .favorite-button {
+    top: 6px;
+    right: 6px;
+    width: 29px;
+    height: 29px;
+    font-size: 1rem;
+  }
+
+  .teacher-card-actions {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    width: 100%;
+    gap: 5px;
+  }
+
+  .teacher-card-actions .button {
+    width: 100%;
+    min-width: 0;
+    padding: 7px 4px;
+    font-size: 0.6rem;
+  }
+
+  .market-feature-panel,
+  .business-dashboard {
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: 15px;
+  }
+
+  .feature-head {
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .feature-head h3 {
+    font-size: 1rem;
+  }
+
+  .availability-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .availability-form select,
+  .availability-form input {
+    padding: 8px;
+    font-size: 0.72rem;
+  }
+
+  .availability-chip {
+    padding: 6px 7px;
+    font-size: 0.64rem;
+  }
+
+  .chat-modal {
+    grid-template-rows: auto minmax(240px, 62vh) auto;
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 17px;
+  }
+
+  .booking-timeline {
+    width: 100%;
+    overflow-x: auto;
+    grid-template-columns: repeat(6, 62px);
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+
+  .booking-timeline::-webkit-scrollbar {
+    display: none;
+  }
+
+  .timeline-step small {
+    font-size: 0.5rem;
+  }
+
+  .booking-money .booking-timeline,
+  .admin-booking-money .booking-timeline {
+    align-self: stretch;
+  }
+
+  .business-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .business-metrics > div {
+    padding: 9px;
+  }
+
+  .business-metrics small {
+    font-size: 0.6rem;
+  }
+
+  .business-metrics strong {
+    font-size: 0.82rem;
+  }
+
+  .favorite-list-item {
+    padding: 9px;
+  }
+}
