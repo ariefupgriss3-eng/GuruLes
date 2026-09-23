@@ -497,6 +497,8 @@ export function InstructorGrowthStatus({
     founding_teacher_no?:number|null;
     identity_verified?:boolean;
     credential_verified?:boolean;
+    experience_verified?:boolean;
+    payout_verified?:boolean;
     completed_sessions?:number;
     response_rate?:number|string;
     premium_plan?:string;
@@ -507,7 +509,9 @@ export function InstructorGrowthStatus({
     <div className="growth-status-grid">
       <div><small>Status</small><strong>{listing.founding_teacher_no?'🌟 Pengajar Perintis #'+listing.founding_teacher_no:'Pengajar GuruLes'}</strong></div>
       <div><small>Identitas</small><strong>{listing.identity_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
-      <div><small>Sertifikat</small><strong>{listing.credential_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
+      <div><small>Sertifikat/Pendidikan</small><strong>{listing.credential_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
+      <div><small>Pengalaman</small><strong>{listing.experience_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
+      <div><small>Rekening/Payout</small><strong>{listing.payout_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
       <div><small>Sesi selesai</small><strong>{listing.completed_sessions||0}</strong></div>
       <div><small>Response rate</small><strong>{Number(listing.response_rate||0).toFixed(0)}%</strong></div>
       <div><small>Paket akun</small><strong>{listing.premium_plan==='premium'?'Premium':'Free'}</strong></div>
@@ -524,10 +528,23 @@ export function AdminTrustControls({
   onChanged,
 }: {
   session:GrowthSession;
-  listing:{id:string;identity_verified?:boolean;credential_verified?:boolean};
+  listing:{
+    id:string;
+    identity_verified?:boolean;
+    credential_verified?:boolean;
+    experience_verified?:boolean;
+    payout_verified?:boolean;
+  };
   onChanged?:()=>void|Promise<void>;
 }) {
-  async function set(field:'identity_verified'|'credential_verified',value:boolean){
+  async function set(
+    field:
+      | 'identity_verified'
+      | 'credential_verified'
+      | 'experience_verified'
+      | 'payout_verified',
+    value:boolean
+  ){
     await api('/rest/v1/instructor_listings?id=eq.'+encodeURIComponent(listing.id),{
       method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({[field]:value})
     },session.access_token);
@@ -539,7 +556,13 @@ export function AdminTrustControls({
         🪪 Identitas {listing.identity_verified?'✓':''}
       </button>
       <button className={listing.credential_verified?'trust-chip active':'trust-chip'} onClick={()=>void set('credential_verified',!listing.credential_verified)}>
-        🎓 Sertifikat {listing.credential_verified?'✓':''}
+        🎓 Pendidikan {listing.credential_verified?'✓':''}
+      </button>
+      <button className={listing.experience_verified?'trust-chip active':'trust-chip'} onClick={()=>void set('experience_verified',!listing.experience_verified)}>
+        💼 Pengalaman {listing.experience_verified?'✓':''}
+      </button>
+      <button className={listing.payout_verified?'trust-chip active':'trust-chip'} onClick={()=>void set('payout_verified',!listing.payout_verified)}>
+        💳 Rekening {listing.payout_verified?'✓':''}
       </button>
     </div>
   );
