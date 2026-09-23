@@ -521,6 +521,7 @@ export function FavoriteButton({
           session.access_token
         );
         setFavoriteId('');
+        window.dispatchEvent(new Event('gurules:favorites-changed'));
       } else {
         const result = (await marketApi(
           '/rest/v1/favorites',
@@ -535,6 +536,7 @@ export function FavoriteButton({
           session.access_token
         )) as Array<{ id: string }>;
         setFavoriteId(result[0]?.id || '');
+        window.dispatchEvent(new Event('gurules:favorites-changed'));
       }
     } finally {
       setBusy(false);
@@ -958,13 +960,21 @@ export function FavoritesPanel({
   const [ids, setIds] = useState<string[]>([]);
 
   useEffect(() => {
-    void marketApi(
-      '/rest/v1/favorites?select=listing_id&order=created_at.desc',
-      {},
-      session.access_token
-    )
-      .then(data => setIds((data as Array<{ listing_id: string }>).map(item => item.listing_id)))
-      .catch(() => undefined);
+    const load = () => {
+      void marketApi(
+        '/rest/v1/favorites?select=listing_id&order=created_at.desc',
+        {},
+        session.access_token
+      )
+        .then(data =>
+          setIds((data as Array<{ listing_id: string }>).map(item => item.listing_id))
+        )
+        .catch(() => undefined);
+    };
+
+    load();
+    window.addEventListener('gurules:favorites-changed', load);
+    return () => window.removeEventListener('gurules:favorites-changed', load);
   }, [session.access_token]);
 
   const favorites = listings.filter(item => ids.includes(item.id));
@@ -1021,7 +1031,7 @@ export function BusinessDashboard({
     )
       .then(data => setPayments(data as PaymentRow[]))
       .catch(() => setPayments([]));
-  }, [session.access_token]);
+  }, [session.access_token, bookings]);
 
   const gross = payments
     .filter(item => item.payment_status === 'paid')
