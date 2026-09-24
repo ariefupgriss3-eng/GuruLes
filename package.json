@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "npm run generate:icons && vite",
+    "build": "npm run generate:icons && vite build",
     "preview": "vite preview",
     "android:init": "npx cap add android && npm run android:prepare",
     "android:sync": "npm run build && npx cap sync android && npm run android:prepare",
@@ -13,7 +13,8 @@
     "android:aab:windows": "npm run android:sync && cd android && gradlew.bat bundleRelease",
     "android:aab:unix": "npm run android:sync && cd android && ./gradlew bundleRelease",
     "android:prepare": "node scripts/android-postsync.mjs",
-    "android:doctor": "npx cap doctor"
+    "android:doctor": "npx cap doctor",
+    "generate:icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
