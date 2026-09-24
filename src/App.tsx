@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import { InstructorBannerStudio } from './banner-studio';
+import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -90,6 +91,10 @@ type Listing = {
   latitude: number | null;
   longitude: number | null;
   service_radius_km: number;
+  profile_banner_url: string | null;
+  profile_banner_id: string | null;
+  profile_banner_template: string | null;
+  profile_banner_updated_at: string | null;
 };
 
 type Session = {
@@ -410,7 +415,7 @@ function App() {
 
   async function loadAdminListings(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at';
     const data = (await api(
       '/rest/v1/instructor_listings?select=' +
         encodeURIComponent(select) +
@@ -449,7 +454,7 @@ function App() {
 
   async function loadOwnInstructorListing(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at';
     const data = (await api(
       '/rest/v1/instructor_listings?instructor_id=eq.' +
         encodeURIComponent(activeSession.user.id) +
@@ -486,7 +491,7 @@ function App() {
     const profiles = (await api(
       '/rest/v1/profiles?id=eq.' +
         encodeURIComponent(activeSession.user.id) +
-        '&select=id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude',
+        '&select=id,role,full_name,phone,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude',
       {},
       activeSession.access_token
     )) as Profile[];
@@ -1227,6 +1232,7 @@ function App() {
         { id: 'summary', icon: '📊', label: 'Ringkasan' },
         { id: 'orders', icon: '📦', label: 'Pesanan' },
         { id: 'instructors', icon: '🎓', label: 'Pengajar' },
+        { id: 'banners', icon: '🎨', label: 'Banner' },
         { id: 'payment', icon: '💳', label: 'Pembayaran' },
       ]
     : profile?.role === 'instructor'
@@ -1236,7 +1242,7 @@ function App() {
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'schedule', icon: '📅', label: 'Jadwal' },
           { id: 'growth', icon: '🚀', label: 'Pertumbuhan' },
-          { id: 'banner', icon: '🎨', label: 'Banner' },
+          { id: 'banner', icon: '🎨', label: 'Banner Profil' },
           { id: 'profile', icon: '👤', label: 'Profil' },
           { id: 'account', icon: '🔐', label: 'Akun' },
         ]
@@ -1542,7 +1548,15 @@ function App() {
                     }}
                   />
                 )}
-                {item.cover_url && (
+                {item.profile_banner_url ? (
+                  <ProfileHeroBanner
+                    url={brandedImageUrl(
+                      item.profile_banner_url,
+                      item.profile_banner_updated_at
+                    )}
+                    name={item.display_name}
+                  />
+                ) : item.cover_url ? (
                   <div className="teacher-cover">
                     <img
                       src={brandedImageUrl(
@@ -1552,7 +1566,7 @@ function App() {
                       alt={'Banner ' + item.display_name}
                     />
                   </div>
-                )}
+                ) : null}
                 <div className="teacher-card-head">
                   {item.avatar_url ? (
                     <img
@@ -1740,6 +1754,10 @@ function App() {
                   <PilotDashboard session={session} settings={growthSettings} />
                 </div>
 
+                <div hidden={dashboardTab !== 'banners'}>
+                  <AdminProfileBannerPanel session={session} />
+                </div>
+
                 <div
                   className="admin-panel"
                   hidden={dashboardTab !== 'instructors'}
@@ -1788,6 +1806,16 @@ function App() {
                     <div className="admin-row" key={item.id}>
                       <div>
                         <strong>{item.display_name}</strong>
+                        {item.profile_banner_url && (
+                          <a
+                            className="text-button"
+                            href={item.profile_banner_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Lihat Banner Profil
+                          </a>
+                        )}
                         <span>
                           {item.title} · {item.regency || item.city}
                           {item.province ? ', ' + item.province : ''} ·{' '}
@@ -2132,11 +2160,24 @@ function App() {
                     </div>
                     <div hidden={dashboardTab !== 'banner'}>
                       {ownListing ? (
-                        <InstructorBannerStudio
-                          userId={profile.id}
-                          listing={ownListing}
-                          phone={profile.phone}
-                        />
+                        <>
+                          <InstructorBannerStudio
+                            userId={profile.id}
+                            listing={ownListing}
+                            phone={profile.phone}
+                          />
+                          <ProfileBannerStudio
+                            session={session}
+                            listing={ownListing}
+                            phone={profile.phone}
+                            onListingChanged={async () => {
+                              await Promise.all([
+                                loadOwnInstructorListing(session),
+                                loadPublicListings(),
+                              ]);
+                            }}
+                          />
+                        </>
                       ) : (
                         <div className="status-box">
                           Lengkapi profil jasa pengajar sebelum membuat banner promosi.
@@ -2753,6 +2794,15 @@ function App() {
               ×
             </button>
             <span className="eyebrow">Pesan Pengajar</span>
+            {selectedListing.profile_banner_url && (
+              <ProfileHeroBanner
+                url={brandedImageUrl(
+                  selectedListing.profile_banner_url,
+                  selectedListing.profile_banner_updated_at
+                )}
+                name={selectedListing.display_name}
+              />
+            )}
             <h2 id="booking-title">{selectedListing.display_name}</h2>
             <p>
               {selectedListing.title} · {selectedListing.city}
