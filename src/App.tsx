@@ -4,6 +4,7 @@ import { InstructorBannerStudio } from './banner-studio';
 import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
 import { AdminSafetyPanel, BlockedUsersPanel, LegalAcceptanceGate, SafetyActions } from './safety-center';
 import { AdminSponsorManager, SponsorAdSlot } from './sponsor-ads';
+import { AdminMonetizationPanel, PublicRateCard } from './monetization';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -2176,6 +2177,7 @@ function App() {
                       .catch(() => undefined);
                   }}
                 />
+                <AdminMonetizationPanel session={session} />
                 <AdminSponsorManager session={session} />
               </div>
 
@@ -3053,6 +3055,8 @@ function App() {
           </section>
         )}
 
+        <PublicRateCard />
+
         <section className="how" id="cara-kerja">
           <span className="eyebrow">Cara Kerja</span>
           <h2>4 langkah, langsung belajar</h2>
@@ -3087,6 +3091,7 @@ function App() {
         <a href="/terms.html" target="_blank" rel="noreferrer">Syarat & Ketentuan</a>
         <a href="/transaction-policy.html" target="_blank" rel="noreferrer">Kebijakan Transaksi</a>
         <a href="/privacy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a>
+        <a href="#promosi">Iklan & Promosi</a>
         <a href="/help.html" target="_blank" rel="noreferrer">Pusat Bantuan</a>
         <a href="/delete-account.html" target="_blank" rel="noreferrer">Hapus Akun</a>
       </footer>
