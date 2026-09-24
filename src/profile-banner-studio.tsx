@@ -29,6 +29,7 @@ type PremiumListing = {
   profile_banner_url?: string | null;
   profile_banner_id?: string | null;
   profile_banner_template?: string | null;
+  auto_profile_banner_enabled?: boolean;
 };
 
 type BannerRow = {
@@ -258,6 +259,36 @@ function initialForm(listing: PremiumListing, phone?: string | null): BannerForm
   };
 }
 
+function formFromRow(row: BannerRow): BannerForm {
+  return {
+    full_name: row.full_name,
+    degree_text: row.degree_text,
+    service_title: row.service_title,
+    category_text: row.category_text,
+    level_text: row.level_text,
+    location_text: row.location_text,
+    whatsapp_text: row.whatsapp_text,
+    price_text: row.price_text,
+    tagline: row.tagline,
+    strength_1: row.strength_1,
+    strength_2: row.strength_2,
+    strength_3: row.strength_3,
+    benefit_1: row.benefit_1,
+    benefit_2: row.benefit_2,
+    benefit_3: row.benefit_3,
+    service_item_1: row.service_item_1,
+    service_item_2: row.service_item_2,
+    service_item_3: row.service_item_3,
+    service_item_4: row.service_item_4,
+    service_item_5: row.service_item_5,
+    quote_left: row.quote_left,
+    quote_top: row.quote_top,
+    quote_right: row.quote_right,
+    promo_badge_text: row.promo_badge_text,
+    show_promo_badge: row.show_promo_badge,
+  };
+}
+
 function validateForm(form: BannerForm, photoUrl: string) {
   if (!photoUrl) return 'Upload foto atau gunakan foto profil terlebih dahulu.';
   if (!form.full_name.trim()) return 'Nama pengajar wajib diisi.';
@@ -307,11 +338,19 @@ export function ProfileBannerStudio({
   listing,
   phone,
   onListingChanged,
+  embedded = false,
+  autoSaveSignal = 0,
+  onAutoSaveComplete,
+  onAutoEnabledChanged,
 }: {
   session: SessionLike;
   listing: PremiumListing;
   phone?: string | null;
   onListingChanged?: () => void | Promise<void>;
+  embedded?: boolean;
+  autoSaveSignal?: number;
+  onAutoSaveComplete?: (ok: boolean, message: string) => void;
+  onAutoEnabledChanged?: (enabled: boolean) => void | Promise<void>;
 }) {
   const previewRef = useRef<HTMLDivElement>(null);
   const profilePhoto = listing.avatar_url || '';
@@ -325,6 +364,11 @@ export function ProfileBannerStudio({
   const [savedBannerId, setSavedBannerId] = useState(listing.profile_banner_id || '');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [autoEnabled, setAutoEnabled] = useState(
+    listing.auto_profile_banner_enabled !== false
+  );
+  const hydratedExistingRef = useRef(false);
+  const lastAutoSaveSignalRef = useRef(0);
 
   const caption = useMemo(() => {
     const strengths = [form.strength_1, form.strength_2, form.strength_3]
@@ -361,6 +405,12 @@ export function ProfileBannerStudio({
   }, [draftKey, form]);
 
   useEffect(() => {
+    setAutoEnabled(listing.auto_profile_banner_enabled !== false);
+  }, [listing.auto_profile_banner_enabled]);
+
+
+
+  useEffect(() => {
     void ensureStorage().catch(() => undefined);
     void loadRows().catch(() => setRows([]));
   }, [session.access_token, listing.id]);
@@ -384,6 +434,36 @@ export function ProfileBannerStudio({
     );
   }
 
+  async function updateAutoEnabled(enabled: boolean) {
+    const previous = autoEnabled;
+    setAutoEnabled(enabled);
+    setMessage('');
+    try {
+      await api(
+        '/rest/v1/instructor_listings?id=eq.' + encodeURIComponent(listing.id),
+        {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ auto_profile_banner_enabled: enabled }),
+        },
+        session.access_token
+      );
+      await onAutoEnabledChanged?.(enabled);
+      setMessage(
+        enabled
+          ? 'Banner Otomatis aktif. Saat Profil disimpan, banner ikut diperbarui.'
+          : 'Banner Otomatis dinonaktifkan. Profil tetap dapat disimpan tanpa mengubah banner.'
+      );
+    } catch (error) {
+      setAutoEnabled(previous);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Pengaturan Banner Otomatis belum dapat disimpan.'
+      );
+    }
+  }
+
   async function loadRows() {
     const data = await api(
       '/rest/v1/instructor_profile_banners?listing_id=eq.' +
@@ -395,7 +475,16 @@ export function ProfileBannerStudio({
     const list = data as BannerRow[];
     setRows(list);
     const active = list.find(row => row.is_active_profile_banner);
-    if (active) setSavedBannerId(active.id);
+    if (active) {
+      setSavedBannerId(active.id);
+      setEditingId(active.id);
+      if (!hydratedExistingRef.current) {
+        const hasLocalDraft = Boolean(localStorage.getItem(draftKey));
+        if (!hasLocalDraft) setForm(formFromRow(active));
+        setPhotoUrl(active.photo_url || profilePhoto);
+        hydratedExistingRef.current = true;
+      }
+    }
   }
 
   function useProfilePhoto() {
@@ -489,8 +578,8 @@ export function ProfileBannerStudio({
     }
   }
 
-  async function uploadSourcePhoto() {
-    if (!photoFile) return photoUrl;
+  async function uploadSourcePhoto(fallbackPhotoUrl = photoUrl) {
+    if (!photoFile) return fallbackPhotoUrl;
     const path =
       'instructors/' +
       session.user.id +
@@ -501,21 +590,24 @@ export function ProfileBannerStudio({
     return await uploadObject(path, photoFile, photoFile.type, session.access_token, false);
   }
 
-  function rowPayload(sourcePhotoUrl: string) {
+  function rowPayload(sourcePhotoUrl: string, formValue: BannerForm = form) {
     return {
       instructor_id: session.user.id,
       listing_id: listing.id,
       template_key: 'premium_edu_green',
       banner_type: 'profile_hero',
       theme_key: 'green_gold',
-      ...form,
+      ...formValue,
       photo_url: sourcePhotoUrl || null,
       updated_at: new Date().toISOString(),
     };
   }
 
-  async function saveBanner() {
-    const error = validateForm(form, photoUrl);
+  async function saveBanner(
+    formValue: BannerForm = form,
+    photoValue: string = photoUrl
+  ) {
+    const error = validateForm(formValue, photoValue);
     if (error) {
       setMessage(error);
       return null;
@@ -525,7 +617,7 @@ export function ProfileBannerStudio({
     setMessage('');
     try {
       await ensureStorage();
-      const sourcePhotoUrl = await uploadSourcePhoto();
+      const sourcePhotoUrl = await uploadSourcePhoto(photoValue);
       const blob = await render((node, options) => toBlob(node, options));
       if (!blob) throw new Error('File PNG banner belum dapat dibuat.');
 
@@ -547,7 +639,7 @@ export function ProfileBannerStudio({
 
       const payload = {
         id: bannerId,
-        ...rowPayload(sourcePhotoUrl),
+        ...rowPayload(sourcePhotoUrl, formValue),
         generated_banner_url: bannerUrl,
       };
 
@@ -575,7 +667,7 @@ export function ProfileBannerStudio({
 
       setEditingId(bannerId);
       setSavedBannerId(bannerId);
-      setPhotoUrl(sourcePhotoUrl || photoUrl);
+      setPhotoUrl(sourcePhotoUrl || photoValue);
       setPhotoFile(null);
       setMessage('Banner premium berhasil disimpan.');
       await loadRows();
@@ -642,38 +734,70 @@ export function ProfileBannerStudio({
   function editRow(row: BannerRow) {
     setEditingId(row.id);
     setSavedBannerId(row.id);
-    setForm({
-      full_name: row.full_name,
-      degree_text: row.degree_text,
-      service_title: row.service_title,
-      category_text: row.category_text,
-      level_text: row.level_text,
-      location_text: row.location_text,
-      whatsapp_text: row.whatsapp_text,
-      price_text: row.price_text,
-      tagline: row.tagline,
-      strength_1: row.strength_1,
-      strength_2: row.strength_2,
-      strength_3: row.strength_3,
-      benefit_1: row.benefit_1,
-      benefit_2: row.benefit_2,
-      benefit_3: row.benefit_3,
-      service_item_1: row.service_item_1,
-      service_item_2: row.service_item_2,
-      service_item_3: row.service_item_3,
-      service_item_4: row.service_item_4,
-      service_item_5: row.service_item_5,
-      quote_left: row.quote_left,
-      quote_top: row.quote_top,
-      quote_right: row.quote_right,
-      promo_badge_text: row.promo_badge_text,
-      show_promo_badge: row.show_promo_badge,
-    });
+    setForm(formFromRow(row));
     setPhotoFile(null);
     setPhotoUrl(row.photo_url || profilePhoto);
     setMessage('Banner lama dimuat untuk diedit.');
     window.setTimeout(() => previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
   }
+
+  async function saveAndActivateCurrent(
+    formValue: BannerForm = form,
+    photoValue: string = photoUrl,
+    autoMode = false
+  ) {
+    const saved = await saveBanner(formValue, photoValue);
+    if (!saved) {
+      if (autoMode) onAutoSaveComplete?.(false, 'Profil tersimpan, tetapi banner otomatis belum dapat diperbarui.');
+      return false;
+    }
+    try {
+      await activateBanner(saved);
+      const successMessage = autoMode
+        ? 'Profil dan banner otomatis berhasil diperbarui.'
+        : 'Banner otomatis berhasil diperbarui dan dipasang di profil.';
+      setMessage(successMessage);
+      if (autoMode) onAutoSaveComplete?.(true, successMessage);
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Banner belum dapat diaktifkan.';
+      if (autoMode) onAutoSaveComplete?.(false, errorMessage);
+      return false;
+    }
+  }
+
+  useEffect(() => {
+    if (!embedded || !autoEnabled || autoSaveSignal <= 0) return;
+    if (autoSaveSignal === lastAutoSaveSignalRef.current) return;
+    lastAutoSaveSignalRef.current = autoSaveSignal;
+
+    const syncedForm: BannerForm = {
+      ...form,
+      full_name: listing.display_name || form.full_name,
+      service_title: listing.title || form.service_title,
+      category_text: listing.category || form.category_text,
+      location_text:
+        [listing.village, listing.district, listing.regency, listing.province]
+          .filter(Boolean)
+          .join(', ') || form.location_text,
+      price_text: listing.price_per_session
+        ? rupiah(listing.price_per_session) + '/sesi'
+        : form.price_text,
+      tagline: listing.tagline || form.tagline,
+      whatsapp_text: phone || form.whatsapp_text,
+    };
+    const syncedPhoto = photoFile ? photoUrl : (listing.avatar_url || photoUrl);
+
+    setForm(syncedForm);
+    setPhotoUrl(syncedPhoto);
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        void saveAndActivateCurrent(syncedForm, syncedPhoto, true);
+      });
+    });
+  }, [autoSaveSignal]);
 
   async function shareBanner() {
     const error = validateForm(form, photoUrl);
@@ -711,18 +835,34 @@ export function ProfileBannerStudio({
   }
 
   return (
-    <section className="premium-banner-studio">
+    <section className={'premium-banner-studio' + (embedded ? ' embedded' : '')}>
       <div className="premium-studio-head">
         <div>
-          <span className="eyebrow">✨ Banner Profil Premium</span>
-          <h3>Premium Edu Green</h3>
-          <p>Buat header profesional dari foto dan data Anda, lalu pasang langsung pada profil publik GuruLes.</p>
+          <span className="eyebrow">✨ {embedded ? 'Banner Otomatis Profil' : 'Banner Profil Premium'}</span>
+          <h3>{embedded ? 'Banner otomatis menyatu dengan Profil' : 'Premium Edu Green'}</h3>
+          <p>
+            {embedded
+              ? 'Lengkapi foto dan data profil Anda. GuruLes akan membuat banner premium otomatis untuk profil publik Anda.'
+              : 'Buat header profesional dari foto dan data Anda, lalu pasang langsung pada profil publik GuruLes.'}
+          </p>
         </div>
-        {listing.profile_banner_url ? (
-          <span className="premium-active-badge">✓ Banner Profil Aktif</span>
-        ) : (
-          <span className="premium-template-badge">PREMIUM EDU GREEN</span>
-        )}
+        <div className="premium-head-controls">
+          {listing.profile_banner_url ? (
+            <span className="premium-active-badge">✓ Banner Aktif di Profil</span>
+          ) : (
+            <span className="premium-template-badge">PREMIUM EDU GREEN</span>
+          )}
+          {embedded && (
+            <label className="premium-auto-toggle">
+              <input
+                type="checkbox"
+                checked={autoEnabled}
+                onChange={event => void updateAutoEnabled(event.target.checked)}
+              />
+              <span>Aktifkan Banner Otomatis di Profil Publik</span>
+            </label>
+          )}
+        </div>
       </div>
 
       <div className="premium-studio-grid">
@@ -795,12 +935,19 @@ export function ProfileBannerStudio({
             <button type="button" className="button secondary" disabled={busy} onClick={() => void downloadPng()}>⬇️ Download PNG</button>
             <button type="button" className="button secondary" disabled={busy} onClick={() => void shareBanner()}>📤 Bagikan</button>
             <button type="button" className="button secondary" onClick={() => void copyCaption()}>📋 Salin Caption</button>
-            <button type="button" className="button primary" disabled={busy} onClick={() => void saveBanner()}>
-              {busy ? 'Memproses...' : editingId ? 'Simpan Perubahan Banner' : 'Simpan Banner'}
+            <button
+              type="button"
+              className="button primary"
+              disabled={busy}
+              onClick={() => void saveAndActivateCurrent()}
+            >
+              {busy ? 'Memproses...' : embedded ? 'Perbarui Banner Sekarang' : 'Simpan & Pasang Banner'}
             </button>
-            <button type="button" className="button premium-activate" disabled={busy} onClick={() => void activateBanner()}>
-              {listing.profile_banner_url ? 'Ganti Banner Profil' : 'Jadikan Banner Profil'}
-            </button>
+            {!embedded && (
+              <button type="button" className="button premium-activate" disabled={busy} onClick={() => void activateBanner()}>
+                {listing.profile_banner_url ? 'Ganti Banner Profil' : 'Jadikan Banner Profil'}
+              </button>
+            )}
           </div>
           {message && <div className="form-success">{message}</div>}
         </form>
@@ -871,6 +1018,7 @@ export function ProfileBannerStudio({
             </div>
           </div>
 
+          {!embedded && (
           <div className="premium-saved">
             <div className="premium-saved-head">
               <strong>Banner tersimpan</strong>
@@ -906,6 +1054,7 @@ export function ProfileBannerStudio({
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </section>
