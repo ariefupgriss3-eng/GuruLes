@@ -361,12 +361,15 @@ export function ProfileBannerStudio({
   }, [draftKey, form]);
 
   useEffect(() => {
-    void ensureStorage();
-    void loadRows();
+    void ensureStorage().catch(() => undefined);
+    void loadRows().catch(() => setRows([]));
+  }, [session.access_token, listing.id]);
+
+  useEffect(() => {
     return () => {
       if (photoObjectUrl) URL.revokeObjectURL(photoObjectUrl);
     };
-  }, [session.access_token, listing.id]);
+  }, [photoObjectUrl]);
 
   function field<K extends keyof BannerForm>(key: K, value: BannerForm[K]) {
     setForm(current => ({ ...current, [key]: value }));
@@ -523,36 +526,10 @@ export function ProfileBannerStudio({
     try {
       await ensureStorage();
       const sourcePhotoUrl = await uploadSourcePhoto();
-
-      let bannerId = editingId;
-      if (bannerId) {
-        await api(
-          '/rest/v1/instructor_profile_banners?id=eq.' + encodeURIComponent(bannerId),
-          {
-            method: 'PATCH',
-            headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify(rowPayload(sourcePhotoUrl)),
-          },
-          session.access_token
-        );
-      } else {
-        const created = await api(
-          '/rest/v1/instructor_profile_banners',
-          {
-            method: 'POST',
-            headers: { Prefer: 'return=representation' },
-            body: JSON.stringify(rowPayload(sourcePhotoUrl)),
-          },
-          session.access_token
-        ) as BannerRow[];
-        bannerId = created[0]?.id || '';
-      }
-
-      if (!bannerId) throw new Error('Metadata banner belum dapat dibuat.');
-
       const blob = await render((node, options) => toBlob(node, options));
       if (!blob) throw new Error('File PNG banner belum dapat dibuat.');
 
+      const bannerId = editingId || crypto.randomUUID();
       const bannerPath =
         'instructors/' +
         session.user.id +
@@ -565,22 +542,36 @@ export function ProfileBannerStudio({
         blob,
         'image/png',
         session.access_token,
-        true
+        Boolean(editingId)
       );
 
-      await api(
-        '/rest/v1/instructor_profile_banners?id=eq.' + encodeURIComponent(bannerId),
-        {
-          method: 'PATCH',
-          headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({
-            generated_banner_url: bannerUrl,
-            photo_url: sourcePhotoUrl || null,
-            updated_at: new Date().toISOString(),
-          }),
-        },
-        session.access_token
-      );
+      const payload = {
+        id: bannerId,
+        ...rowPayload(sourcePhotoUrl),
+        generated_banner_url: bannerUrl,
+      };
+
+      if (editingId) {
+        await api(
+          '/rest/v1/instructor_profile_banners?id=eq.' + encodeURIComponent(bannerId),
+          {
+            method: 'PATCH',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify(payload),
+          },
+          session.access_token
+        );
+      } else {
+        await api(
+          '/rest/v1/instructor_profile_banners',
+          {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify(payload),
+          },
+          session.access_token
+        );
+      }
 
       setEditingId(bannerId);
       setSavedBannerId(bannerId);
@@ -917,6 +908,67 @@ export function ProfileBannerStudio({
           </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+
+export function AdminProfileBannerPanel({ session }: { session: SessionLike }) {
+  const [rows, setRows] = useState<BannerRow[]>([]);
+  const [message, setMessage] = useState('');
+
+  async function load() {
+    const data = await api(
+      '/rest/v1/instructor_profile_banners?select=*&order=updated_at.desc',
+      {},
+      session.access_token
+    );
+    setRows(data as BannerRow[]);
+  }
+
+  useEffect(() => {
+    void load().catch(error => {
+      setMessage(error instanceof Error ? error.message : 'Data banner belum dapat dimuat.');
+    });
+  }, [session.access_token]);
+
+  return (
+    <section className="premium-banner-admin">
+      <div className="premium-studio-head">
+        <div>
+          <span className="eyebrow">🎨 Banner Profil Pengajar</span>
+          <h3>Monitoring Banner Premium</h3>
+          <p>Admin dapat melihat banner yang dibuat pengajar dan status banner yang aktif di profil publik.</p>
+        </div>
+        <button className="button secondary small" onClick={() => void load()}>Segarkan</button>
+      </div>
+      <div className="admin-growth-summary">
+        <div><strong>{rows.length}</strong><span>Total banner</span></div>
+        <div><strong>{rows.filter(row => row.is_active_profile_banner).length}</strong><span>Aktif di profil</span></div>
+        <div><strong>{new Set(rows.map(row => row.instructor_id)).size}</strong><span>Pengajar membuat banner</span></div>
+      </div>
+      {rows.length === 0 ? (
+        <div className="status-box">Belum ada Banner Profil Premium.</div>
+      ) : (
+        <div className="premium-admin-grid">
+          {rows.map(row => (
+            <article key={row.id}>
+              {row.generated_banner_url ? (
+                <img src={row.generated_banner_url} alt={'Banner ' + row.full_name} loading="lazy" />
+              ) : (
+                <div className="premium-saved-placeholder">Belum dirender</div>
+              )}
+              <div>
+                <strong>{row.full_name}</strong>
+                <span>{row.service_title}</span>
+                <small>{row.template_key} · {new Date(row.updated_at).toLocaleString('id-ID')}</small>
+                {row.is_active_profile_banner && <b>✓ Aktif di profil publik</b>}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      {message && <div className="form-error">{message}</div>}
     </section>
   );
 }
