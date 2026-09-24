@@ -19,6 +19,10 @@ export type GrowthSettings = {
   premium_enabled: boolean;
   boost_enabled: boolean;
   payment_automation_mode: string;
+  marketplace_model: 'platform_payment' | 'direct_payment';
+  ads_enabled: boolean;
+  sponsor_ads_enabled: boolean;
+  direct_payment_notice: string;
   pilot_mode: boolean;
   pilot_teacher_limit: number;
   pilot_buyer_limit: number;
@@ -112,6 +116,7 @@ export async function loadGrowthSettings(token?: string) {
 }
 
 export function LaunchBanner({ settings }: { settings: GrowthSettings | null }) {
+  const directPayment = settings?.marketplace_model === 'direct_payment';
   if (settings?.pilot_mode) {
     return (
       <section className="launch-banner" aria-label="Program uji coba terbatas GuruLes">
@@ -123,7 +128,7 @@ export function LaunchBanner({ settings }: { settings: GrowthSettings | null }) 
               'Pilot awal untuk pengajar dan pencari guru. Fee platform tetap 0% selama masa uji coba.'}
           </span>
         </div>
-        <b>PILOT · 0% FEE</b>
+        <b>{directPayment ? 'PUBLIC BETA · DIRECT PAY' : 'PILOT · 0% FEE'}</b>
       </section>
     );
   }
@@ -135,7 +140,7 @@ export function LaunchBanner({ settings }: { settings: GrowthSettings | null }) 
         <strong>{settings.launch_title || 'GuruLes Launching Program'}</strong>
         <span>{settings.launch_message || '0% biaya platform selama masa peluncuran.'}</span>
       </div>
-      <b>0% FEE</b>
+      <b>{directPayment ? 'DIRECT PAY · 0% KOMISI' : '0% FEE'}</b>
     </section>
   );
 }
@@ -638,12 +643,13 @@ async function transactionAction(session:GrowthSession,bookingId:string,body:Rec
 }
 
 export function BookingIssueControls({
-  session,booking,role,isAdmin=false,onChanged
+  session,booking,role,isAdmin=false,directPayment=false,onChanged
 }:{
   session:GrowthSession;
   booking:GrowthBooking;
   role:'parent'|'student'|'instructor'|'admin';
   isAdmin?:boolean;
+  directPayment?:boolean;
   onChanged?:()=>void|Promise<void>;
 }) {
   const [busy,setBusy]=useState(false);
@@ -681,7 +687,7 @@ export function BookingIssueControls({
           const reason=window.prompt('Jelaskan masalah/sengketa:');if(reason)void run({action:'open_dispute',reason});
         }}>Laporkan Masalah</button>
       )}
-      {participant&&['paid','in_progress'].includes(booking.status)&&new Date(booking.scheduled_at)<=new Date()&&(
+      {participant&&(directPayment?['accepted','in_progress']:['paid','in_progress']).includes(booking.status)&&new Date(booking.scheduled_at)<=new Date()&&(
         <button disabled={busy} className="text-button danger-text" onClick={()=>{
           if(window.confirm('Laporkan pihak lain tidak hadir (no-show)?'))void run({action:'mark_no_show'});
         }}>No-show</button>
@@ -693,7 +699,7 @@ export function BookingIssueControls({
           }}>Selesaikan</button>
           <button disabled={busy} className="button secondary small" onClick={()=>{
             const note=window.prompt('Catatan pembatalan/refund:');if(note)void run({action:'resolve_dispute',resolution:'cancelled',resolution_note:note});
-          }}>Batalkan + Refund</button>
+          }}>{directPayment ? 'Batalkan Booking' : 'Batalkan + Refund'}</button>
         </>
       )}
     </div>
@@ -701,11 +707,12 @@ export function BookingIssueControls({
 }
 
 export function PackageSessionProgress({
-  session,booking,role,onChanged
+  session,booking,role,directPayment=false,onChanged
 }:{
   session:GrowthSession;
   booking:GrowthBooking;
   role:'parent'|'student'|'instructor'|'admin';
+  directPayment?:boolean;
   onChanged?:()=>void|Promise<void>;
 }) {
   const [rows,setRows]=useState<PackageSession[]>([]);
@@ -736,14 +743,14 @@ export function PackageSessionProgress({
       <div className="package-session-list">
         {rows.map(row=>{
           const myConfirmed=role==='instructor'?row.instructor_confirmed_complete:row.buyer_confirmed_complete;
-          const canConfirm=participant&&['paid','in_progress'].includes(booking.status)&&!myConfirmed&&row.status!=='completed'&&new Date(row.scheduled_at)<=new Date();
+          const canConfirm=participant&&(directPayment?['accepted','in_progress']:['paid','in_progress']).includes(booking.status)&&!myConfirmed&&row.status!=='completed'&&new Date(row.scheduled_at)<=new Date();
           const canRespond=row.status==='reschedule_requested'&&row.reschedule_requested_by!==session.user.id;
           return (
             <div className="package-session-row" key={row.id}>
               <div><b>#{row.session_no}</b><span>{new Date(row.scheduled_at).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'})}</span><small>{row.status}</small></div>
               <div>
                 {canConfirm&&<button className="text-button" onClick={()=>void run(row,{action:'confirm_package_session'})}>Konfirmasi selesai</button>}
-                {participant&&['paid','in_progress'].includes(booking.status)&&row.status!=='completed'&&row.status!=='reschedule_requested'&&new Date(row.scheduled_at)>new Date()&&(
+                {participant&&(directPayment?['accepted','in_progress']:['paid','in_progress']).includes(booking.status)&&row.status!=='completed'&&row.status!=='reschedule_requested'&&new Date(row.scheduled_at)>new Date()&&(
                   <button className="text-button" onClick={()=>{
                     const proposed=window.prompt('Jadwal baru (contoh 2026-10-01T16:00):');
                     if(proposed){const d=new Date(proposed);if(!Number.isNaN(d.getTime()))void run(row,{action:'request_package_reschedule',proposed_scheduled_at:d.toISOString()});}

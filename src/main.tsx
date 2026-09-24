@@ -10,6 +10,7 @@ import './account-deletion.css';
 import './banner-studio.css';
 import './profile-banner-studio.css';
 import './safety-center.css';
+import './sponsor-ads.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

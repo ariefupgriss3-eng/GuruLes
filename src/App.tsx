@@ -3,6 +3,7 @@ import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import { InstructorBannerStudio } from './banner-studio';
 import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
 import { AdminSafetyPanel, BlockedUsersPanel, LegalAcceptanceGate, SafetyActions } from './safety-center';
+import { AdminSponsorManager, SponsorAdSlot } from './sponsor-ads';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -1384,7 +1385,7 @@ function App() {
         { id: 'orders', icon: '📦', label: 'Pesanan' },
         { id: 'instructors', icon: '🎓', label: 'Pengajar' },
         { id: 'banners', icon: '🎨', label: 'Banner' },
-        { id: 'payment', icon: '💳', label: 'Pembayaran' },
+        { id: 'payment', icon: '💰', label: 'Monetisasi' },
         { id: 'safety', icon: '🛡️', label: 'Keamanan' },
       ]
     : profile?.role === 'instructor'
@@ -1406,6 +1407,9 @@ function App() {
           { id: 'find', icon: '🔎', label: 'Cari Guru' },
           { id: 'account', icon: '🔐', label: 'Akun' },
         ];
+
+  const directPaymentModel =
+    growthSettings?.marketplace_model === 'direct_payment';
 
   function openDashboardTab(tab: string) {
     setDashboardTab(tab);
@@ -1504,7 +1508,7 @@ function App() {
             </div>
             <div className="trust-row">
               <span>🛡️ Terverifikasi</span>
-              <span>💳 Tarif transparan</span>
+              <span>🤝 Pembayaran langsung</span>
               <span>📍 Sesuai wilayah</span>
             </div>
           </div>
@@ -1521,6 +1525,11 @@ function App() {
             </div>
           </div>
         </section>
+
+        <SponsorAdSlot
+          placement="home"
+          enabled={Boolean(growthSettings?.ads_enabled && growthSettings?.sponsor_ads_enabled)}
+        />
 
         <section className="quick-categories" aria-label="Kategori populer">
           <div className="quick-category-head">
@@ -1575,9 +1584,14 @@ function App() {
         <section className="market-promo-strip">
           <div><span>✅</span><strong>Pengajar Terverifikasi</strong><small>Profil diperiksa admin</small></div>
           <div><span>💬</span><strong>Langsung Booking</strong><small>Pilih jadwal & metode</small></div>
-          <div><span>💳</span><strong>Pembayaran Transparan</strong><small>Fee terlihat sebelum pesan</small></div>
+          <div><span>🤝</span><strong>Pembayaran Langsung</strong><small>Pengajar & pencari guru bertransaksi langsung</small></div>
           <div><span>📱</span><strong>Mudah di HP</strong><small>Cari dan pesan kapan saja</small></div>
         </section>
+
+        <SponsorAdSlot
+          placement="search"
+          enabled={Boolean(growthSettings?.ads_enabled && growthSettings?.sponsor_ads_enabled)}
+        />
 
         <section className="directory" id="pengajar">
           <div className="section-heading">
@@ -2162,6 +2176,7 @@ function App() {
                       .catch(() => undefined);
                   }}
                 />
+                <AdminSponsorManager session={session} />
               </div>
 
               <div hidden={dashboardTab !== 'safety'}>
@@ -2217,15 +2232,17 @@ function App() {
                     </strong>
                   </div>
                   <div>
-                    <small>Fee GuruLes</small>
+                    <small>{directPaymentModel ? 'Model pembayaran' : 'Fee GuruLes'}</small>
                     <strong>
-                      {rupiah(
-                        bookings.reduce(
-                          (total, item) =>
-                            total + Number(item.platform_fee_amount || 0),
-                          0
-                        )
-                      )}
+                      {directPaymentModel
+                        ? 'Langsung'
+                        : rupiah(
+                            bookings.reduce(
+                              (total, item) =>
+                                total + Number(item.platform_fee_amount || 0),
+                              0
+                            )
+                          )}
                     </strong>
                   </div>
                 </div>
@@ -2291,12 +2308,14 @@ function App() {
                           <div className="admin-booking-money">
                             <BookingTimeline booking={booking} />
                             <strong>{rupiah(booking.session_price)}</strong>
-                            <span>
-                              Fee {rupiah(booking.platform_fee_amount)}
-                            </span>
-                            <span>
-                              Pengajar {rupiah(booking.instructor_net_amount)}
-                            </span>
+                            {directPaymentModel ? (
+                              <span>🤝 Pembayaran langsung antar pihak</span>
+                            ) : (
+                              <>
+                                <span>Fee {rupiah(booking.platform_fee_amount)}</span>
+                                <span>Pengajar {rupiah(booking.instructor_net_amount)}</span>
+                              </>
+                            )}
                             <span className={'status-pill ' + booking.status}>
                               {booking.status === 'requested'
                                 ? 'Menunggu'
@@ -2313,6 +2332,7 @@ function App() {
                               session={session}
                               booking={booking}
                               role="admin"
+                              directPayment={directPaymentModel}
                               onChanged={() => loadBookings(session)}
                             />
                             <BookingIssueControls
@@ -2320,6 +2340,7 @@ function App() {
                               booking={booking}
                               role="admin"
                               isAdmin
+                              directPayment={directPaymentModel}
                               onChanged={() => loadBookings(session)}
                             />
                           </div>
@@ -2339,7 +2360,7 @@ function App() {
                   <strong>{profile?.full_name}</strong>
                   <p>
                     {profile?.role === 'instructor'
-                      ? 'Kelola pesanan, pendapatan, jadwal, chat, dan profil pengajar dari satu dashboard.'
+                      ? 'Kelola pesanan, tarif, jadwal, chat, promosi, dan profil pengajar dari satu dashboard.'
                       : 'Kelola pesanan, pengajar favorit, chat, dan pencarian dari satu dashboard.'}
                   </p>
                 </div>
@@ -2960,12 +2981,14 @@ function App() {
                             <div className="booking-money">
                               <BookingTimeline booking={booking} />
                               <strong>{rupiah(booking.session_price)}</strong>
-                              <span>
-                                Fee GuruLes {rupiah(booking.platform_fee_amount)}
-                              </span>
-                              <span>
-                                Pengajar {rupiah(booking.instructor_net_amount)}
-                              </span>
+                              {directPaymentModel ? (
+                                <span>🤝 Pembayaran langsung ke pengajar</span>
+                              ) : (
+                                <>
+                                  <span>Fee GuruLes {rupiah(booking.platform_fee_amount)}</span>
+                                  <span>Pengajar {rupiah(booking.instructor_net_amount)}</span>
+                                </>
+                              )}
                               <span className={'status-pill ' + booking.status}>
                                 {booking.status}
                               </span>
@@ -2981,12 +3004,14 @@ function App() {
                                     session={session}
                                     booking={booking}
                                     role={profile.role}
+                                    directPayment={directPaymentModel}
                                     onChanged={() => loadBookings(session)}
                                   />
                                   <BookingIssueControls
                                     session={session}
                                     booking={booking}
                                     role={profile.role}
+                                    directPayment={directPaymentModel}
                                     onChanged={() => loadBookings(session)}
                                   />
                                 </>
@@ -3049,8 +3074,8 @@ function App() {
             </div>
             <div>
               <strong>4</strong>
-              <h3>Bayar & belajar</h3>
-              <p>Pembayaran transparan, sesi dimulai.</p>
+              <h3>Sepakati & belajar</h3>
+              <p>Pembayaran dilakukan langsung dengan pengajar, lalu sesi dimulai.</p>
             </div>
           </div>
         </section>
@@ -3134,11 +3159,15 @@ function App() {
               onChange={setSelectedPackage}
             />
 
-            {growthSettings?.launch_mode && (
+            {directPaymentModel ? (
+              <div className="launch-free-note direct-payment-note">
+                🤝 Pembayaran langsung ke pengajar · GuruLes tidak menerima dana les
+              </div>
+            ) : growthSettings?.launch_mode ? (
               <div className="launch-free-note">
                 🎉 Masa peluncuran: 0% biaya platform
               </div>
-            )}
+            ) : null}
 
             <div className="booking-price-box">
               <div>
@@ -3156,40 +3185,62 @@ function App() {
                   )}
                 </strong>
               </div>
-              <div>
-                <span>Fee GuruLes {platformFeePercent}%</span>
-                <strong>
-                  {rupiah(
-                    Math.floor(
-                      bookingGrossPrice(
-                        selectedListing.price_per_session,
-                        selectedPackage
-                      ) *
-                        platformFeePercent /
-                        100
-                    )
-                  )}
-                </strong>
-              </div>
-              <div>
-                <span>Diterima pengajar</span>
-                <strong>
-                  {rupiah(
-                    bookingGrossPrice(
-                      selectedListing.price_per_session,
-                      selectedPackage
-                    ) -
-                      Math.floor(
+              {directPaymentModel ? (
+                <>
+                  <div>
+                    <span>Komisi transaksi GuruLes</span>
+                    <strong>Rp0</strong>
+                  </div>
+                  <div>
+                    <span>Dibayar langsung ke pengajar</span>
+                    <strong>
+                      {rupiah(
                         bookingGrossPrice(
                           selectedListing.price_per_session,
                           selectedPackage
-                        ) *
-                          platformFeePercent /
-                          100
-                      )
-                  )}
-                </strong>
-              </div>
+                        )
+                      )}
+                    </strong>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span>Fee GuruLes {platformFeePercent}%</span>
+                    <strong>
+                      {rupiah(
+                        Math.floor(
+                          bookingGrossPrice(
+                            selectedListing.price_per_session,
+                            selectedPackage
+                          ) *
+                            platformFeePercent /
+                            100
+                        )
+                      )}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Diterima pengajar</span>
+                    <strong>
+                      {rupiah(
+                        bookingGrossPrice(
+                          selectedListing.price_per_session,
+                          selectedPackage
+                        ) -
+                          Math.floor(
+                            bookingGrossPrice(
+                              selectedListing.price_per_session,
+                              selectedPackage
+                            ) *
+                              platformFeePercent /
+                              100
+                          )
+                      )}
+                    </strong>
+                  </div>
+                </>
+              )}
             </div>
 
             <form onSubmit={submitBooking}>
@@ -3301,9 +3352,10 @@ function App() {
               <div className="transaction-policy-note">
                 <strong>Perlindungan transaksi GuruLes</strong>
                 <span>
-                  Sebelum pembayaran, booking dapat dibatalkan. Setelah pembayaran
-                  terverifikasi, perubahan jadwal harus disetujui kedua pihak.
-                  No-show atau masalah transaksi ditangani melalui sengketa Admin.
+                  GuruLes mencatat booking, jadwal, dan reputasi. Pembayaran les
+                  dilakukan langsung antara pencari guru dan pengajar. Bila ada
+                  masalah layanan/no-show, gunakan fitur laporan agar Admin dapat
+                  meninjau akun dan riwayat booking.
                 </span>
                 <a href="/transaction-policy.html" target="_blank" rel="noreferrer">
                   Baca Kebijakan Transaksi
