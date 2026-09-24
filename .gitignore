@@ -3,3 +3,13 @@ dist/
 .vercel/
 .env
 .env.*
+
+
+# Android / Capacitor local build outputs
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+*.jks
+*.keystore
+keystore.properties
