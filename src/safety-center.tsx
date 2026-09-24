@@ -377,3 +377,98 @@ export function AdminSafetyPanel({ session }: { session: SessionLike }) {
     </section>
   );
 }
+
+
+export function LegalAcceptanceGate({ session }: { session: SessionLike }) {
+  const [required, setRequired] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const [busy, setBusy] = useState(true);
+  const [message, setMessage] = useState('');
+
+  async function checkAcceptance() {
+    try {
+      const rows = await api(
+        '/rest/v1/user_legal_acceptances?user_id=eq.' +
+          encodeURIComponent(session.user.id) +
+          '&policy_version=eq.2026-09-24&policy_key=in.(terms,privacy)&select=policy_key',
+        {},
+        session.access_token
+      ) as Array<{ policy_key: string }>;
+      const keys = new Set(rows.map(row => row.policy_key));
+      setRequired(!(keys.has('terms') && keys.has('privacy')));
+    } catch {
+      setRequired(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    void checkAcceptance();
+  }, [session.access_token, session.user.id]);
+
+  async function accept() {
+    if (!checked) {
+      setMessage('Centang persetujuan untuk melanjutkan.');
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    try {
+      const url =
+        '/rest/v1/user_legal_acceptances?on_conflict=' +
+        encodeURIComponent('user_id,policy_key,policy_version');
+      await api(url, {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify([
+          {
+            user_id: session.user.id,
+            policy_key: 'terms',
+            policy_version: '2026-09-24',
+            source: 'app',
+          },
+          {
+            user_id: session.user.id,
+            policy_key: 'privacy',
+            policy_version: '2026-09-24',
+            source: 'app',
+          },
+        ]),
+      }, session.access_token);
+      setRequired(false);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Persetujuan belum dapat disimpan.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (busy && !required) return null;
+  if (!required) return null;
+
+  return (
+    <div className="legal-gate-backdrop">
+      <section className="legal-gate" role="dialog" aria-modal="true" aria-labelledby="legal-gate-title">
+        <span className="eyebrow">GuruLes Public Beta</span>
+        <h2 id="legal-gate-title">Persetujuan ketentuan terbaru</h2>
+        <p>
+          Sebelum melanjutkan, baca ketentuan penggunaan dan kebijakan privasi GuruLes.
+        </p>
+        <div className="legal-gate-links">
+          <a href="/terms.html" target="_blank" rel="noreferrer">Syarat & Ketentuan</a>
+          <a href="/privacy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a>
+          <a href="/transaction-policy.html" target="_blank" rel="noreferrer">Kebijakan Transaksi</a>
+        </div>
+        <label className="legal-consent">
+          <input type="checkbox" checked={checked} onChange={event => setChecked(event.target.checked)} />
+          <span>Saya telah membaca dan menyetujui Syarat & Ketentuan serta Kebijakan Privasi GuruLes.</span>
+        </label>
+        {message && <div className="form-error">{message}</div>}
+        <button className="button primary wide" disabled={busy} onClick={() => void accept()}>
+          {busy ? 'Menyimpan...' : 'Setuju & Lanjutkan'}
+        </button>
+      </section>
+    </div>
+  );
+}
