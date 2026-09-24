@@ -9,6 +9,7 @@ import './pwa.css';
 import './account-deletion.css';
 import './banner-studio.css';
 import './profile-banner-studio.css';
+import './safety-center.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
