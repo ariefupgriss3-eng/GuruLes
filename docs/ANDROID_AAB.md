@@ -56,3 +56,29 @@ Build release awal bisa belum signed. Untuk Google Play, buat Upload Key/keystor
 Workflow `.github/workflows/android-aab.yml` dapat dijalankan manual dari tab **Actions → Build Android AAB (unsigned) → Run workflow**.
 
 Workflow akan membangun frontend, membuat container Android, menjalankan `bundleRelease`, lalu mengunggah AAB sebagai artifact selama 7 hari. Artifact ini untuk validasi teknis dan belum siap dikirim ke Play Store sampai release signing dengan Upload Key dikonfigurasi.
+
+
+## Signed release
+
+Signed AAB dibangun melalui workflow:
+
+`.github/workflows/android-signed-aab.yml`
+
+Workflow membutuhkan empat GitHub Actions Repository Secrets:
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+Upload key **tidak boleh** disimpan di repository.
+
+Android native GuruLes menggunakan:
+- Capacitor v8
+- target SDK 36
+- min SDK 24
+- native geolocation plugin dengan fallback lokasi manual
+- HTTPS-only WebView
+- package `com.arieftoteles.gurules`
+
+Detail rilis terdapat di `docs/PLAY_STORE_RELEASE.md`.

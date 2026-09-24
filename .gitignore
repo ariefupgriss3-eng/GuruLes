@@ -13,3 +13,8 @@ android/app/build/
 *.jks
 *.keystore
 keystore.properties
+
+
+# Generated app icons
+public/icons/gurules-192.png
+public/icons/gurules-512.png

@@ -1,4 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 export type LearningLocation = {
   village: string;
@@ -20,6 +22,30 @@ type RegionListing = {
 };
 
 export type LocationScope = 'nearby' | 'regency' | 'province' | 'all';
+
+async function readDevicePosition() {
+  if (Capacitor.isNativePlatform()) {
+    await Geolocation.requestPermissions();
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 300000,
+    });
+    return position.coords;
+  }
+
+  if (!navigator.geolocation) {
+    throw new Error('GPS_UNSUPPORTED');
+  }
+
+  return await new Promise<GeolocationCoordinates>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      position => resolve(position.coords),
+      reject,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
+  });
+}
 
 export const EMPTY_LEARNING_LOCATION: LearningLocation = {
   village: '',
@@ -299,22 +325,22 @@ export function LocationFilter({
                 type="button"
                 onClick={() => {
                   setGpsMessage('');
-                  if (!navigator.geolocation) {
-                    setGpsMessage('Perangkat ini tidak mendukung lokasi GPS.');
-                    return;
-                  }
-                  navigator.geolocation.getCurrentPosition(
-                    position => {
+                  void readDevicePosition()
+                    .then(coords => {
                       setDraft(current => ({
                         ...current,
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
                       }));
                       setGpsMessage('✓ Lokasi perangkat aktif untuk perhitungan jarak.');
-                    },
-                    () => setGpsMessage('Izin lokasi tidak diberikan. Anda tetap dapat memilih wilayah manual.'),
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-                  );
+                    })
+                    .catch(error => {
+                      setGpsMessage(
+                        error instanceof Error && error.message === 'GPS_UNSUPPORTED'
+                          ? 'Perangkat ini tidak mendukung lokasi GPS.'
+                          : 'Izin lokasi tidak diberikan. Anda tetap dapat memilih wilayah manual.'
+                      );
+                    });
                 }}
               >
                 📍 Gunakan Lokasi Perangkat
