@@ -748,23 +748,39 @@ export function ProfileBannerStudio({
     photoValue: string = photoUrl,
     autoMode = false
   ) {
+    const notifyHost = autoMode || embedded;
     const saved = await saveBanner(formValue, photoValue);
     if (!saved) {
-      if (autoMode) onAutoSaveComplete?.(false, 'Profil tersimpan, tetapi banner otomatis belum dapat diperbarui.');
+      const errorMessage = autoMode
+        ? 'Profil tersimpan, tetapi banner otomatis belum dapat diperbarui.'
+        : 'Banner otomatis belum dapat diperbarui.';
+      if (notifyHost) {
+        setMessage('');
+        onAutoSaveComplete?.(false, errorMessage);
+      }
       return false;
     }
+
     const activated = await activateBanner(saved);
     if (!activated) {
       const errorMessage = 'Banner berhasil disimpan, tetapi belum dapat diaktifkan pada profil.';
-      if (autoMode) onAutoSaveComplete?.(false, errorMessage);
+      if (notifyHost) {
+        setMessage('');
+        onAutoSaveComplete?.(false, errorMessage);
+      }
       return false;
     }
 
     const successMessage = autoMode
       ? 'Profil dan banner otomatis berhasil diperbarui.'
       : 'Banner otomatis berhasil diperbarui dan dipasang di profil.';
-    setMessage(successMessage);
-    if (autoMode) onAutoSaveComplete?.(true, successMessage);
+
+    if (notifyHost) {
+      setMessage('');
+      onAutoSaveComplete?.(true, successMessage);
+    } else {
+      setMessage(successMessage);
+    }
     return true;
   }
 
@@ -938,11 +954,11 @@ export function ProfileBannerStudio({
             <button type="button" className="button secondary" onClick={() => void copyCaption()}>📋 Salin Caption</button>
             <button
               type="button"
-              className="button primary"
+              className={embedded ? 'button secondary small premium-refresh-button' : 'button primary'}
               disabled={busy}
               onClick={() => void saveAndActivateCurrent()}
             >
-              {busy ? 'Memproses...' : embedded ? 'Perbarui Banner Sekarang' : 'Simpan & Pasang Banner'}
+              {busy ? 'Memproses...' : embedded ? '↻ Perbarui Banner' : 'Simpan & Pasang Banner'}
             </button>
             {!embedded && (
               <button type="button" className="button premium-activate" disabled={busy} onClick={() => void activateBanner()}>
