@@ -7,7 +7,7 @@
 - Package: `com.arieftoteles.gurules`
 - Kategori utama: **Education**
 - Harga aplikasi: **Gratis**
-- Iklan: **Tidak**
+- Iklan: **Tidak pada build Android Play Store v1.1.8**
 - Privacy Policy: `https://guru-les-beta.vercel.app/privacy.html`
 - Account Deletion URL: `https://guru-les-beta.vercel.app/delete-account.html`
 
@@ -79,5 +79,6 @@ Guru tepat, belajar lebih cepat.
 
 - Gunakan email dukungan resmi yang aktif pada bagian Store settings.
 - Gunakan URL privacy policy production di atas.
-- Jangan menyebut fitur berbayar digital yang belum ada.
-- Pembayaran GuruLes ditujukan untuk layanan pembelajaran/pelatihan antar pengguna, bukan penjualan konten digital rekaman.
+- Build Android Play Store v1.1.8 tidak menampilkan checkout Boost, Featured, GuruLes Pro, Rate Card digital, atau slot sponsor.
+- Pembayaran GuruLes di aplikasi Android ditujukan untuk layanan pembelajaran/pelatihan antar pengguna, bukan pembelian fitur digital.
+- Jika monetisasi digital kelak diaktifkan di Android, perbarui deklarasi Play Console dan gunakan mekanisme billing yang memenuhi kebijakan Google Play.
