@@ -2667,6 +2667,7 @@ function App() {
       <footer>
         <strong>🎓 GuruLes</strong>
         <span>Marketplace pengajar privat · Arieftoteles Production</span>
+        <a href="/privacy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a>
       </footer>
 
       <nav className="mobile-bottom-nav" aria-label="Navigasi utama">
