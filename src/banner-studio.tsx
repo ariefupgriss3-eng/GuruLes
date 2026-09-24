@@ -41,6 +41,52 @@ function safeFileName(value: string) {
     .slice(0, 60) || 'pengajar';
 }
 
+const TRANSPARENT_PIXEL =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Foto tidak dapat dibaca.'));
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function imageUrlToDataUrl(url: string) {
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    mode: 'cors',
+    cache: 'no-store',
+    credentials: 'omit',
+  });
+  if (!response.ok) {
+    throw new Error('Foto profil tidak dapat diproses untuk ekspor.');
+  }
+  return await blobToDataUrl(await response.blob());
+}
+
+async function waitForImage(image: HTMLImageElement) {
+  if (image.complete && image.naturalWidth > 0) return;
+  await new Promise<void>((resolve, reject) => {
+    const timer = window.setTimeout(
+      () => reject(new Error('Foto terlalu lama dimuat.')),
+      8000
+    );
+    image.onload = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    image.onerror = () => {
+      window.clearTimeout(timer);
+      reject(new Error('Foto gagal dimuat untuk ekspor.'));
+    };
+  });
+}
+
 export function InstructorBannerStudio({
   userId,
   listing,
@@ -159,27 +205,73 @@ export function InstructorBannerStudio({
     setMessage('Foto siap digunakan pada banner.');
   }
 
-  async function renderPng() {
+  async function renderBanner<T>(
+    renderer: (
+      node: HTMLDivElement,
+      options: {
+        cacheBust: boolean;
+        pixelRatio: number;
+        backgroundColor: string;
+        imagePlaceholder: string;
+        skipFonts: boolean;
+      }
+    ) => Promise<T>
+  ) {
     const node = bannerRef.current;
     if (!node) throw new Error('Preview banner belum tersedia.');
-    const ratio = size.width / Math.max(node.offsetWidth, 1);
-    return await toPng(node, {
-      cacheBust: true,
-      pixelRatio: ratio,
-      backgroundColor: '#ffffff',
-    });
+
+    const image = node.querySelector('.banner-photo-zone img') as HTMLImageElement | null;
+    const originalSrc = image?.getAttribute('src') || '';
+    let usedPhotoFallback = false;
+
+    try {
+      if (image && originalSrc) {
+        try {
+          const safePhoto = await imageUrlToDataUrl(originalSrc);
+          image.src = safePhoto || TRANSPARENT_PIXEL;
+          await waitForImage(image);
+        } catch {
+          image.src = TRANSPARENT_PIXEL;
+          usedPhotoFallback = true;
+          await waitForImage(image).catch(() => undefined);
+        }
+      }
+
+      const ratio = Math.min(3, size.width / Math.max(node.offsetWidth, 1));
+      const output = await renderer(node, {
+        cacheBust: true,
+        pixelRatio: ratio,
+        backgroundColor: '#ffffff',
+        imagePlaceholder: TRANSPARENT_PIXEL,
+        skipFonts: true,
+      });
+
+      return { output, usedPhotoFallback };
+    } finally {
+      if (image && originalSrc) image.src = originalSrc;
+    }
+  }
+
+  async function renderPng() {
+    return await renderBanner((node, options) => toPng(node, options));
   }
 
   async function download() {
     setBusy(true);
     setMessage('');
     try {
-      const dataUrl = await renderPng();
+      const { output: dataUrl, usedPhotoFallback } = await renderPng();
       const a = document.createElement('a');
       a.href = dataUrl;
       a.download = 'gurules-banner-' + safeFileName(name) + '-' + sizeKey + '.png';
+      document.body.appendChild(a);
       a.click();
-      setMessage('Banner PNG berhasil dibuat.');
+      a.remove();
+      setMessage(
+        usedPhotoFallback
+          ? 'Banner berhasil dibuat tanpa foto karena foto profil tidak dapat diekspor. Upload ulang foto langsung di menu Banner agar foto ikut masuk.'
+          : 'Banner PNG berhasil dibuat.'
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Banner belum dapat dibuat.');
     } finally {
@@ -191,10 +283,9 @@ export function InstructorBannerStudio({
     setBusy(true);
     setMessage('');
     try {
-      const node = bannerRef.current;
-      if (!node) throw new Error('Preview banner belum tersedia.');
-      const ratio = size.width / Math.max(node.offsetWidth, 1);
-      const blob = await toBlob(node, { cacheBust: true, pixelRatio: ratio, backgroundColor: '#ffffff' });
+      const { output: blob, usedPhotoFallback } = await renderBanner((node, options) =>
+        toBlob(node, options)
+      );
       if (!blob) throw new Error('File banner belum dapat dibuat.');
       const file = new File([blob], 'gurules-banner-' + safeFileName(name) + '.png', { type: 'image/png' });
 
@@ -204,7 +295,11 @@ export function InstructorBannerStudio({
           text: caption,
           files: [file],
         });
-        setMessage('Banner siap dibagikan.');
+        setMessage(
+          usedPhotoFallback
+            ? 'Banner siap dibagikan tanpa foto. Upload ulang foto langsung di menu Banner agar foto ikut masuk.'
+            : 'Banner siap dibagikan.'
+        );
       } else {
         await navigator.clipboard.writeText(caption);
         setMessage('Perangkat belum mendukung share file langsung. Caption sudah disalin.');
