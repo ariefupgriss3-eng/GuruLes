@@ -4,7 +4,7 @@ import { InstructorBannerStudio } from './banner-studio';
 import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
 import { AdminSafetyPanel, BlockedUsersPanel, LegalAcceptanceGate, SafetyActions } from './safety-center';
 import { AdminSponsorManager, SponsorAdSlot } from './sponsor-ads';
-import { AdminMonetizationPanel, PublicRateCard } from './monetization';
+import { AdminMonetizationPanel, InstructorMonetizationShop, PublicRateCard } from './monetization';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -91,6 +91,7 @@ type Listing = {
   premium_plan: string;
   premium_until: string | null;
   boost_until: string | null;
+  featured_until: string | null;
   latitude: number | null;
   longitude: number | null;
   service_radius_km: number;
@@ -423,7 +424,7 @@ function App() {
 
   async function loadAdminListings(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at,auto_profile_banner_enabled';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,featured_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at,auto_profile_banner_enabled';
     const data = (await api(
       '/rest/v1/instructor_listings?select=' +
         encodeURIComponent(select) +
@@ -475,7 +476,7 @@ function App() {
 
   async function loadOwnInstructorListing(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at,auto_profile_banner_enabled';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,featured_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at,auto_profile_banner_enabled';
     const data = (await api(
       '/rest/v1/instructor_listings?instructor_id=eq.' +
         encodeURIComponent(activeSession.user.id) +
@@ -697,6 +698,12 @@ function App() {
           locationScore(a, learningLocation);
         if (regionGap !== 0) return regionGap;
       }
+
+      const aFeatured =
+        a.featured_until && new Date(a.featured_until) > new Date() ? 1 : 0;
+      const bFeatured =
+        b.featured_until && new Date(b.featured_until) > new Date() ? 1 : 0;
+      if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
       if (growthSettings?.boost_enabled) {
         const aBoost =
@@ -1727,7 +1734,14 @@ function App() {
 
           <div className="teacher-grid">
             {filtered.map(item => (
-              <article className="teacher-card" key={item.id}>
+              <article
+                className={
+                  'teacher-card' +
+                  (item.premium_until && new Date(item.premium_until) > new Date() ? ' teacher-card-pro' : '') +
+                  (item.featured_until && new Date(item.featured_until) > new Date() ? ' teacher-card-featured' : '')
+                }
+                key={item.id}
+              >
                 {(!session || profile?.role === 'parent' || profile?.role === 'student') && (
                   <FavoriteButton
                     session={session}
@@ -1797,10 +1811,18 @@ function App() {
                       {item.credential_verified && <span>🎓 Pendidikan ✓</span>}
                       {item.experience_verified && <span>💼 Pengalaman ✓</span>}
                       {item.payout_verified && <span>💳 Rekening ✓</span>}
+                      {item.featured_until &&
+                        new Date(item.featured_until) > new Date() && (
+                          <span className="paid-promo-badge">⭐ Featured · Promosi</span>
+                        )}
+                      {item.premium_until &&
+                        new Date(item.premium_until) > new Date() && (
+                          <span className="paid-promo-badge">💎 Pro</span>
+                        )}
                       {growthSettings?.boost_enabled &&
                         item.boost_until &&
                         new Date(item.boost_until) > new Date() && (
-                          <span>🚀 Boost</span>
+                          <span className="paid-promo-badge">🚀 Boost · Promosi</span>
                         )}
                     </div>
                   </div>
@@ -2458,6 +2480,16 @@ function App() {
                     <div hidden={dashboardTab !== 'growth'}>
                       {ownListing ? (
                         <>
+                          <InstructorMonetizationShop
+                            session={session}
+                            listing={ownListing}
+                            onChanged={async () => {
+                              await Promise.all([
+                                loadOwnInstructorListing(session),
+                                loadPublicListings(),
+                              ]);
+                            }}
+                          />
                           <InstructorPackageManager
                             session={session}
                             listingId={ownListing.id}
@@ -2826,7 +2858,11 @@ function App() {
                       <div className="parent-teacher-list">
                         {listings.map(item => (
                           <article
-                            className="parent-teacher-card"
+                            className={
+                              'parent-teacher-card' +
+                              (item.premium_until && new Date(item.premium_until) > new Date() ? ' teacher-card-pro' : '') +
+                              (item.featured_until && new Date(item.featured_until) > new Date() ? ' teacher-card-featured' : '')
+                            }
                             key={item.id}
                           >
                             <div className="parent-teacher-main">
@@ -2855,6 +2891,14 @@ function App() {
                                   <span className="verified">
                                     ✓ Terverifikasi
                                   </span>
+                                  {item.featured_until &&
+                                    new Date(item.featured_until) > new Date() && (
+                                      <span className="paid-promo-badge">⭐ Featured · Promosi</span>
+                                    )}
+                                  {item.premium_until &&
+                                    new Date(item.premium_until) > new Date() && (
+                                      <span className="paid-promo-badge">💎 Pro</span>
+                                    )}
                                 </div>
                                 <h4>{item.title}</h4>
                                 {item.tagline && (
