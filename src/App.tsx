@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import { InstructorBannerStudio } from './banner-studio';
-import { ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
+import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -1232,6 +1232,7 @@ function App() {
         { id: 'summary', icon: '📊', label: 'Ringkasan' },
         { id: 'orders', icon: '📦', label: 'Pesanan' },
         { id: 'instructors', icon: '🎓', label: 'Pengajar' },
+        { id: 'banners', icon: '🎨', label: 'Banner' },
         { id: 'payment', icon: '💳', label: 'Pembayaran' },
       ]
     : profile?.role === 'instructor'
@@ -1751,6 +1752,10 @@ function App() {
                     totalInstructors={adminListings.length}
                   />
                   <PilotDashboard session={session} settings={growthSettings} />
+                </div>
+
+                <div hidden={dashboardTab !== 'banners'}>
+                  <AdminProfileBannerPanel session={session} />
                 </div>
 
                 <div
