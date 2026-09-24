@@ -16,12 +16,20 @@ function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+function isNativeContainer() {
+  const w = window as Window & {
+    Capacitor?: { isNativePlatform?: () => boolean };
+  };
+  return Boolean(w.Capacitor?.isNativePlatform?.());
+}
+
 export function PWAInstallButton() {
   const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [showIosTip, setShowIosTip] = useState(false);
 
   const ios = useMemo(() => isIos(), []);
+  const nativeContainer = useMemo(() => isNativeContainer(), []);
 
   useEffect(() => {
     setInstalled(isStandalone());
@@ -44,6 +52,8 @@ export function PWAInstallButton() {
       window.removeEventListener('appinstalled', onInstalled);
     };
   }, []);
+
+  if (nativeContainer) return null;
 
   if (installed) {
     return (
@@ -85,6 +95,7 @@ export function PWAInstallButton() {
 
 export function PWAUpdateNotice() {
   const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
+  const nativeContainer = useMemo(() => isNativeContainer(), []);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -104,7 +115,7 @@ export function PWAUpdateNotice() {
     });
   }, []);
 
-  if (!waiting) return null;
+  if (nativeContainer || !waiting) return null;
 
   return (
     <div className="pwa-update-toast">
