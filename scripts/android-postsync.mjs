@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import sharp from 'sharp';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -129,13 +130,29 @@ if (!fs.existsSync(iconSource)) {
 
 const drawableNoDpi = path.join(resDir, 'drawable-nodpi');
 fs.mkdirSync(drawableNoDpi, { recursive: true });
-fs.copyFileSync(iconSource, path.join(drawableNoDpi, 'gurules_icon.png'));
 
-for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
+// Re-encode agar PNG web menjadi PNG Android yang deterministik dan aman untuk AAPT2.
+await sharp(iconSource)
+  .resize(512, 512, { fit: 'contain', background: '#F5FBFF' })
+  .png({ compressionLevel: 9, adaptiveFiltering: true })
+  .toFile(path.join(drawableNoDpi, 'gurules_icon.png'));
+
+const launcherSizes = {
+  mdpi: 48,
+  hdpi: 72,
+  xhdpi: 96,
+  xxhdpi: 144,
+  xxxhdpi: 192,
+};
+
+for (const [density, size] of Object.entries(launcherSizes)) {
   const dir = path.join(resDir, 'mipmap-' + density);
   fs.mkdirSync(dir, { recursive: true });
   for (const name of ['ic_launcher.png', 'ic_launcher_round.png']) {
-    fs.copyFileSync(iconSource, path.join(dir, name));
+    await sharp(iconSource)
+      .resize(size, size, { fit: 'contain', background: '#F5FBFF' })
+      .png({ compressionLevel: 9, adaptiveFiltering: true })
+      .toFile(path.join(dir, name));
   }
 }
 
