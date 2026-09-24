@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'gurules-pwa-v1';
+const CACHE_VERSION = 'gurules-pwa-v2';
 const APP_SHELL = [
   '/',
   '/offline.html',
