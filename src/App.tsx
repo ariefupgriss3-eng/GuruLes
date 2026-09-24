@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { PWAInstallButton, PWAUpdateNotice } from './pwa';
+import { InstructorBannerStudio } from './banner-studio';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -101,6 +102,7 @@ type Profile = {
   id: string;
   role: 'student' | 'parent' | 'instructor';
   full_name: string;
+  phone: string | null;
   city: string | null;
   account_status: string;
   learning_village: string | null;
@@ -436,7 +438,7 @@ function App() {
     const data = (await api(
       '/rest/v1/profiles?select=' +
         encodeURIComponent(
-          'id,role,full_name,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude'
+          'id,role,full_name,phone,city,account_status,learning_village,learning_district,learning_regency,learning_province,learning_latitude,learning_longitude'
         ) +
         '&order=full_name.asc',
       {},
@@ -1234,6 +1236,7 @@ function App() {
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'schedule', icon: '📅', label: 'Jadwal' },
           { id: 'growth', icon: '🚀', label: 'Pertumbuhan' },
+          { id: 'banner', icon: '🎨', label: 'Banner' },
           { id: 'profile', icon: '👤', label: 'Profil' },
           { id: 'account', icon: '🔐', label: 'Akun' },
         ]
@@ -2124,6 +2127,19 @@ function App() {
                       ) : (
                         <div className="status-box">
                           Profil jasa pengajar belum ditemukan.
+                        </div>
+                      )}
+                    </div>
+                    <div hidden={dashboardTab !== 'banner'}>
+                      {ownListing ? (
+                        <InstructorBannerStudio
+                          userId={profile.id}
+                          listing={ownListing}
+                          phone={profile.phone}
+                        />
+                      ) : (
+                        <div className="status-box">
+                          Lengkapi profil jasa pengajar sebelum membuat banner promosi.
                         </div>
                       )}
                     </div>
