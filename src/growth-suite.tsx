@@ -212,9 +212,9 @@ export function InstructorPackageManager({
   const [rows, setRows] = useState<GrowthPackage[]>([]);
   const [message, setMessage] = useState('');
   const defaults = useMemo(() => [
-    { sessions_count: 4, discount_percent: 5 },
-    { sessions_count: 8, discount_percent: 10 },
-    { sessions_count: 12, discount_percent: 15 },
+    { sessions_count: 4, discount_percent: 30 },
+    { sessions_count: 8, discount_percent: 35 },
+    { sessions_count: 12, discount_percent: 40 },
   ], []);
 
   async function load() {
@@ -273,11 +273,11 @@ export function InstructorPackageManager({
         <div>
           <span className="eyebrow">Paket Belajar</span>
           <h3>4x · 8x · 12x sesi</h3>
-          <p>Paket membantu murid melakukan repeat booking tanpa keluar dari GuruLes.</p>
+          <p>Promo peluncuran: paket belajar memberi diskon mulai 30% untuk mendorong booking pertama dan repeat booking.</p>
         </div>
         {rows.length === 0 && (
           <button className="button primary small" onClick={() => void ensureDefaults()}>
-            Aktifkan Paket
+            Aktifkan Promo Paket
           </button>
         )}
       </div>
@@ -292,8 +292,8 @@ export function InstructorPackageManager({
                 <label>
                   Diskon %
                   <input
-                    type="number" min="0" max="40" value={row.discount_percent}
-                    onChange={event => void update(row, { discount_percent: Math.max(0, Math.min(40, Number(event.target.value))) })}
+                    type="number" min="30" max="40" value={row.discount_percent}
+                    onChange={event => void update(row, { discount_percent: Math.max(30, Math.min(40, Number(event.target.value))) })}
                   />
                 </label>
                 <button className="button secondary small" onClick={() => void update(row, { is_active: !row.is_active })}>
@@ -473,6 +473,7 @@ export function ReferralPanel({ session, isInstructor=false }: { session: Growth
   const [code,setCode]=useState('');
   const [count,setCount]=useState(0);
   const [message,setMessage]=useState('');
+  const [rewardCount,setRewardCount]=useState(0);
 
   async function load(){
     let codes=await api(
@@ -489,10 +490,11 @@ export function ReferralPanel({ session, isInstructor=false }: { session: Growth
     }
     setCode(codes[0].code);
     const events=await api(
-      '/rest/v1/referral_events?referrer_id=eq.'+encodeURIComponent(session.user.id)+'&select=id',
+      '/rest/v1/referral_events?referrer_id=eq.'+encodeURIComponent(session.user.id)+'&select=id,reward_awarded',
       {},session.access_token
-    ) as Array<{id:string}>;
+    ) as Array<{id:string;reward_awarded:boolean}>;
     setCount(events.length);
+    setRewardCount(events.filter(event=>event.reward_awarded).length);
   }
   useEffect(()=>{void load().catch(()=>{});},[session.access_token]);
 
@@ -538,7 +540,12 @@ export function ReferralPanel({ session, isInstructor=false }: { session: Growth
         <button className="button secondary small" onClick={()=>void copy()}>Salin Link</button>
         <button className="button primary small" onClick={()=>void share()}>Bagikan</button>
       </div>
-      <span className="referral-count">{count} referral berhasil</span>
+      <span className="referral-count">
+        {count} referral berhasil
+        {isInstructor
+          ? ' · '+rewardCount+' Boost diperoleh · '+(3-(count%3))+' referral lagi menuju Boost 30 hari'
+          : ''}
+      </span>
       {message&&<small className="form-success">{message}</small>}
     </div>
   );
@@ -927,30 +934,59 @@ export function PilotDashboard({
   settings: GrowthSettings | null;
 }) {
   const [profiles, setProfiles] = useState<Array<{id:string;role:string}>>([]);
-  const [bookings, setBookings] = useState<Array<{id:string;status:string}>>([]);
+  const [bookings, setBookings] = useState<Array<{id:string;status:string;buyer_id:string}>>([]);
+  const [instructors, setInstructors] = useState<Array<{id:string;is_active:boolean;verification_status:string}>>([]);
+  const [referrals, setReferrals] = useState<Array<{id:string}>>([]);
+  const [orders, setOrders] = useState<Array<{id:string;product_id:string;amount:number;status:string}>>([]);
+  const [products, setProducts] = useState<Array<{id:string;code:string;name:string}>>([]);
   const [feedback, setFeedback] = useState<Array<{overall_rating:number;ease_rating:number;issue_type:string}>>([]);
 
   async function load() {
-    const [profileRows, bookingRows, feedbackRows] = await Promise.all([
-      api('/rest/v1/profiles?select=id,role', {}, session.access_token),
-      api('/rest/v1/bookings?select=id,status', {}, session.access_token),
-      api('/rest/v1/pilot_feedback?select=overall_rating,ease_rating,issue_type', {}, session.access_token),
-    ]);
+    const [profileRows, bookingRows, instructorRows, referralRows, orderRows, productRows, feedbackRows] =
+      await Promise.all([
+        api('/rest/v1/profiles?select=id,role', {}, session.access_token),
+        api('/rest/v1/bookings?select=id,status,buyer_id', {}, session.access_token),
+        api('/rest/v1/instructor_listings?select=id,is_active,verification_status', {}, session.access_token),
+        api('/rest/v1/referral_events?select=id', {}, session.access_token),
+        api('/rest/v1/monetization_orders?select=id,product_id,amount,status', {}, session.access_token),
+        api('/rest/v1/monetization_products?select=id,code,name', {}, session.access_token),
+        settings?.pilot_mode
+          ? api('/rest/v1/pilot_feedback?select=overall_rating,ease_rating,issue_type', {}, session.access_token)
+          : Promise.resolve([]),
+      ]);
+
     setProfiles(profileRows as Array<{id:string;role:string}>);
-    setBookings(bookingRows as Array<{id:string;status:string}>);
+    setBookings(bookingRows as Array<{id:string;status:string;buyer_id:string}>);
+    setInstructors(instructorRows as Array<{id:string;is_active:boolean;verification_status:string}>);
+    setReferrals(referralRows as Array<{id:string}>);
+    setOrders(orderRows as Array<{id:string;product_id:string;amount:number;status:string}>);
+    setProducts(productRows as Array<{id:string;code:string;name:string}>);
     setFeedback(feedbackRows as Array<{overall_rating:number;ease_rating:number;issue_type:string}>);
   }
 
   useEffect(() => {
-    if (!settings?.pilot_mode) return;
     void load().catch(() => undefined);
   }, [settings?.pilot_mode, session.access_token]);
 
-  if (!settings?.pilot_mode) return null;
-
   const teachers = profiles.filter(row => row.role === 'instructor').length;
+  const activeTeachers = instructors.filter(
+    row => row.is_active && row.verification_status === 'verified'
+  ).length;
   const buyers = profiles.filter(row => row.role === 'parent' || row.role === 'student').length;
+  const buyersWithBooking = new Set(bookings.map(row => row.buyer_id).filter(Boolean)).size;
+  const conversionRate = buyers ? (buyersWithBooking / buyers) * 100 : 0;
   const completed = bookings.filter(row => row.status === 'completed').length;
+  const paidOrders = orders.filter(row => row.status === 'paid' || row.status === 'active');
+  const revenue = paidOrders.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const productById = new Map(products.map(product => [product.id, product]));
+  const revenueFor = (keyword:string) => paidOrders
+    .filter(order => {
+      const product = productById.get(order.product_id);
+      return (product?.code || '').toLowerCase().includes(keyword) ||
+        (product?.name || '').toLowerCase().includes(keyword);
+    })
+    .reduce((sum, order) => sum + Number(order.amount || 0), 0);
+
   const avgOverall = feedback.length
     ? feedback.reduce((sum, row) => sum + Number(row.overall_rating || 0), 0) / feedback.length
     : 0;
@@ -963,27 +999,43 @@ export function PilotDashboard({
     <div className="growth-panel">
       <div className="feature-head">
         <div>
-          <span className="eyebrow">🧪 Monitoring Pilot</span>
-          <h3>Uji coba terbatas GuruLes</h3>
+          <span className="eyebrow">📈 Marketplace Traction</span>
+          <h3>Pertumbuhan GuruLes</h3>
           <p>
-            Kuota dikendalikan otomatis: maksimal {settings.pilot_teacher_limit} pengajar
-            dan {settings.pilot_buyer_limit} pencari guru.
+            Ukur supply, demand, konversi booking, referral, dan monetisasi secara nyata.
+            {settings?.pilot_mode
+              ? ' Pilot aktif: kuota '+settings.pilot_teacher_limit+' pengajar dan '+settings.pilot_buyer_limit+' pencari guru.'
+              : ''}
           </p>
         </div>
         <button className="button secondary small" onClick={() => void load()}>
           Segarkan
         </button>
       </div>
+
       <div className="admin-growth-summary">
-        <div><strong>{teachers}/{settings.pilot_teacher_limit}</strong><span>Pengajar pilot</span></div>
-        <div><strong>{buyers}/{settings.pilot_buyer_limit}</strong><span>Pencari guru</span></div>
+        <div><strong>{activeTeachers}/{teachers}</strong><span>Pengajar aktif/terdaftar</span></div>
+        <div><strong>{buyers}</strong><span>Pencari guru</span></div>
+        <div><strong>{buyersWithBooking}</strong><span>Pencari sudah booking</span></div>
+        <div><strong>{conversionRate.toFixed(1)}%</strong><span>Buyer → booking</span></div>
         <div><strong>{bookings.length}</strong><span>Total booking</span></div>
         <div><strong>{completed}</strong><span>Sesi selesai</span></div>
-        <div><strong>{feedback.length}</strong><span>Feedback masuk</span></div>
-        <div><strong>{avgOverall ? avgOverall.toFixed(1) : '-'}</strong><span>Kepuasan / 5</span></div>
-        <div><strong>{avgEase ? avgEase.toFixed(1) : '-'}</strong><span>Kemudahan / 5</span></div>
-        <div><strong>{issues}</strong><span>Feedback bermasalah</span></div>
+        <div><strong>{referrals.length}</strong><span>Referral berhasil</span></div>
+        <div><strong>{paidOrders.length}</strong><span>Order promosi berbayar</span></div>
+        <div><strong>{rupiah(revenue)}</strong><span>Pendapatan monetisasi</span></div>
+        <div><strong>{rupiah(revenueFor('boost'))}</strong><span>Boost</span></div>
+        <div><strong>{rupiah(revenueFor('featured'))}</strong><span>Featured</span></div>
+        <div><strong>{rupiah(revenueFor('pro'))}</strong><span>GuruLes Pro</span></div>
       </div>
+
+      {settings?.pilot_mode && (
+        <div className="admin-growth-summary">
+          <div><strong>{feedback.length}</strong><span>Feedback pilot</span></div>
+          <div><strong>{avgOverall ? avgOverall.toFixed(1) : '-'}</strong><span>Kepuasan / 5</span></div>
+          <div><strong>{avgEase ? avgEase.toFixed(1) : '-'}</strong><span>Kemudahan / 5</span></div>
+          <div><strong>{issues}</strong><span>Feedback bermasalah</span></div>
+        </div>
+      )}
     </div>
   );
 }
