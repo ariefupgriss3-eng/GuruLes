@@ -1476,9 +1476,32 @@ function App() {
               <span className="eyebrow">Cari Pengajar</span>
               <h2>Pengajar yang benar-benar terdaftar</h2>
             </div>
-            <span className="result-count">
-              {filtered.length} pengajar ditemukan
-            </span>
+            {isAdmin ? (
+              <div className="admin-directory-count">
+                <span className="result-count">
+                  {filtered.length} aktif publik
+                </span>
+                <span className="admin-pending-inline">
+                  {pendingAdminListings.length} menunggu verifikasi
+                </span>
+                {pendingAdminListings.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => {
+                      if (session) void loadAdminListings(session);
+                      openDashboardTab('instructors');
+                    }}
+                  >
+                    Lihat Pendaftaran Baru
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="result-count">
+                {filtered.length} pengajar ditemukan
+              </span>
+            )}
           </div>
 
           <LocationFilter

@@ -3230,3 +3230,27 @@ html {
     width:100%;
   }
 }
+
+.admin-directory-count{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.admin-pending-inline{
+  padding:7px 10px;
+  border-radius:999px;
+  background:#fff2ca;
+  color:#7d6018;
+  font-size:.74rem;
+  font-weight:900;
+}
+.admin-directory-count .text-button{
+  margin-left:0;
+}
+@media(max-width:640px){
+  .admin-directory-count{
+    justify-content:flex-start;
+  }
+}
