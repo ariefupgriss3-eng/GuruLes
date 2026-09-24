@@ -5,8 +5,8 @@
 - App name: **GuruLes**
 - Publisher: **Arieftoteles Production**
 - Package/Application ID: `com.arieftoteles.gurules`
-- Version name awal: `1.0.0`
-- Version code awal: `1`
+- Release candidate: **1.1.8**
+- Version code: **12**
 - Target SDK: **Android 16 / API 36**
 - Minimum SDK: **API 24**
 - Production web/PWA: `https://guru-les-beta.vercel.app`
@@ -50,12 +50,12 @@ Setelah secrets tersedia:
 
 **Actions → Build Android AAB (signed) → Run workflow**
 
-Untuk rilis pertama:
-- `version_code = 1`
-- `version_name = 1.0.0`
+Untuk release candidate saat ini:
+- `version_code = 12`
+- `version_name = 1.1.8`
 
 Artifact:
-`gurules-signed-aab-v1.0.0-1`
+`gurules-signed-aab-v1.1.8-12`
 
 Isi utama:
 - `app-release.aab`
@@ -122,7 +122,17 @@ Uji di perangkat Android nyata:
 - rotasi/background/resume
 - koneksi lambat dan koneksi putus
 
-## 7. Play Console
+## 7. Kebijakan pembayaran Android Play Store
+
+Build Android Play Store dipisahkan dari monetisasi digital web:
+
+- Booking les/pelatihan tetap menggunakan pembayaran langsung antara pengguna dan pengajar karena transaksi tersebut terkait layanan pembelajaran/pelatihan yang diberikan secara fisik atau langsung oleh pengajar.
+- Boost, Featured, dan GuruLes Pro adalah benefit digital. Pada build Android Play Store, Rate Card dan checkout eksternal untuk produk ini tidak ditampilkan.
+- Slot sponsor/iklan GuruLes juga tidak ditampilkan pada build Android Play Store saat release candidate ini.
+- Produk monetisasi digital tetap dapat dikelola pada versi web/PWA sampai integrasi Google Play Billing atau program alternatif yang memenuhi kebijakan Play benar-benar diterapkan.
+- Jangan menambahkan tombol, link, atau ajakan dari aplikasi Android menuju checkout eksternal untuk produk digital.
+
+## 8. Play Console
 
 Untuk aplikasi baru:
 
@@ -137,7 +147,7 @@ Untuk aplikasi baru:
 9. Mulai dari **Internal testing**.
 10. Lanjut Closed testing / Production setelah pilot Android stabil.
 
-## 8. Data Safety — bahan pengisian
+## 9. Data Safety — bahan pengisian
 
 Periksa kembali di Play Console sebelum submit. GuruLes saat ini dapat memproses:
 
@@ -162,7 +172,7 @@ Tujuan utama:
 
 Jangan menyatakan data yang tidak benar-benar dikumpulkan, dan jangan mengurangi deklarasi untuk data yang memang diproses.
 
-## 9. Aturan keamanan release
+## 10. Aturan keamanan release
 
 - Jangan commit keystore.
 - Jangan commit password.
