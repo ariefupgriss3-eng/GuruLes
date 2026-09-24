@@ -22,7 +22,8 @@
     "react-dom": "^19.0.0",
     "@capacitor/android": "^8.0.0",
     "@capacitor/core": "^8.0.0",
-    "@capacitor/geolocation": "^8.0.0"
+    "@capacitor/geolocation": "^8.0.0",
+    "html-to-image": "^1.11.13"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.0.0"

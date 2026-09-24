@@ -7,6 +7,7 @@ import './location-filter.css';
 import './growth-suite.css';
 import './pwa.css';
 import './account-deletion.css';
+import './banner-studio.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
