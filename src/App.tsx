@@ -894,7 +894,7 @@ function App() {
             encodeURIComponent('user_id,policy_key,policy_version'),
           {
             method: 'POST',
-            headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+            headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
             body: JSON.stringify([
               {
                 user_id: temporaryAcceptanceSession.user.id,
@@ -1097,7 +1097,7 @@ function App() {
           encodeURIComponent('user_id,policy_key,policy_version'),
         {
           method: 'POST',
-          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
           body: JSON.stringify({
             user_id: session.user.id,
             policy_key: 'transaction',
