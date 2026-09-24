@@ -14,7 +14,12 @@ createRoot(document.getElementById('root')!).render(
 );
 
 
-if ('serviceWorker' in navigator) {
+const nativeContainer = Boolean(
+  (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } })
+    .Capacitor?.isNativePlatform?.()
+);
+
+if ('serviceWorker' in navigator && !nativeContainer) {
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register('/sw.js').catch(error => {
       console.warn('GuruLes service worker belum dapat didaftarkan.', error);
