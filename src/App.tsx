@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import { InstructorBannerStudio } from './banner-studio';
 import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
@@ -53,6 +54,7 @@ import {
 } from './growth-suite';
 
 const SUPABASE_URL = 'https://ikumhfuaqqgqrexemkwn.supabase.co';
+const IS_NATIVE_ANDROID = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 const SUPABASE_KEY = 'sb_publishable_nQhV0S4__E_3OgwrhB_QiQ_kDOc9j-E';
 
 type Listing = {
@@ -1536,7 +1538,7 @@ function App() {
 
         <SponsorAdSlot
           placement="home"
-          enabled={Boolean(growthSettings?.ads_enabled && growthSettings?.sponsor_ads_enabled)}
+          enabled={Boolean(!IS_NATIVE_ANDROID && growthSettings?.ads_enabled && growthSettings?.sponsor_ads_enabled)}
         />
 
         <section className="quick-categories" aria-label="Kategori populer">
@@ -1598,7 +1600,7 @@ function App() {
 
         <SponsorAdSlot
           placement="search"
-          enabled={Boolean(growthSettings?.ads_enabled && growthSettings?.sponsor_ads_enabled)}
+          enabled={Boolean(!IS_NATIVE_ANDROID && growthSettings?.ads_enabled && growthSettings?.sponsor_ads_enabled)}
         />
 
         <section className="directory" id="pengajar">
@@ -2199,8 +2201,12 @@ function App() {
                       .catch(() => undefined);
                   }}
                 />
-                <AdminMonetizationPanel session={session} />
-                <AdminSponsorManager session={session} />
+                {!IS_NATIVE_ANDROID && (
+                  <>
+                    <AdminMonetizationPanel session={session} />
+                    <AdminSponsorManager session={session} />
+                  </>
+                )}
               </div>
 
               <div hidden={dashboardTab !== 'safety'}>
@@ -2480,16 +2486,23 @@ function App() {
                     <div hidden={dashboardTab !== 'growth'}>
                       {ownListing ? (
                         <>
-                          <InstructorMonetizationShop
-                            session={session}
-                            listing={ownListing}
-                            onChanged={async () => {
-                              await Promise.all([
-                                loadOwnInstructorListing(session),
-                                loadPublicListings(),
-                              ]);
-                            }}
-                          />
+                          {IS_NATIVE_ANDROID ? (
+                            <div className="status-box">
+                              Boost, Featured, dan GuruLes Pro tidak dijual di aplikasi Android.
+                              Seluruh fungsi marketplace dan layanan belajar tetap tersedia.
+                            </div>
+                          ) : (
+                            <InstructorMonetizationShop
+                              session={session}
+                              listing={ownListing}
+                              onChanged={async () => {
+                                await Promise.all([
+                                  loadOwnInstructorListing(session),
+                                  loadPublicListings(),
+                                ]);
+                              }}
+                            />
+                          )}
                           <InstructorPackageManager
                             session={session}
                             listingId={ownListing.id}
@@ -3099,7 +3112,7 @@ function App() {
           </section>
         )}
 
-        <PublicRateCard />
+        {!IS_NATIVE_ANDROID && <PublicRateCard />}
 
         <section className="how" id="cara-kerja">
           <span className="eyebrow">Cara Kerja</span>
