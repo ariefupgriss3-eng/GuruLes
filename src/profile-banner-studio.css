@@ -167,3 +167,75 @@
   .premium-photo{height:91%}
   .premium-promo-seal{width:60%;max-width:108px}
 }
+
+
+/* Embedded Banner Otomatis di halaman Profil */
+.premium-banner-studio.embedded{
+  margin-top:22px;
+  border:1px solid #d9e8df;
+  background:linear-gradient(180deg,#fbfffc,#f6fbf8);
+  box-shadow:none;
+}
+.premium-banner-studio.embedded .premium-studio-head{
+  padding-bottom:14px;
+  border-bottom:1px solid #e1ebe4;
+}
+.premium-head-controls{
+  display:grid;
+  gap:8px;
+  justify-items:end;
+}
+.premium-auto-toggle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  max-width:310px;
+  padding:9px 11px;
+  border:1px solid #cfe1d5;
+  border-radius:12px;
+  background:#fff;
+  color:#315443;
+  font-size:.72rem;
+  font-weight:800;
+}
+.premium-auto-toggle input{
+  width:18px;
+  height:18px;
+  accent-color:#1c6845;
+}
+.premium-banner-studio.embedded .premium-studio-grid{
+  grid-template-columns:minmax(330px,.74fr) minmax(470px,1.26fr);
+}
+.profile-social-banner-details{
+  margin-top:18px;
+  border:1px solid #dce7ef;
+  border-radius:16px;
+  background:#fbfdff;
+  overflow:hidden;
+}
+.profile-social-banner-details>summary{
+  cursor:pointer;
+  padding:13px 15px;
+  font-weight:900;
+  color:#31536b;
+}
+.profile-social-banner-details>p{
+  margin:0;
+  padding:0 15px 12px;
+  color:#718493;
+  font-size:.76rem;
+}
+.profile-social-banner-details .banner-studio{
+  margin:0;
+  border:0;
+  border-top:1px solid #e3edf4;
+  border-radius:0;
+  box-shadow:none;
+}
+@media(max-width:1050px){
+  .premium-banner-studio.embedded .premium-studio-grid{grid-template-columns:1fr}
+  .premium-head-controls{justify-items:start}
+}
+@media(max-width:700px){
+  .premium-auto-toggle{max-width:100%}
+}
