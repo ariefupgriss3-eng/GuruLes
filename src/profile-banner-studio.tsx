@@ -684,7 +684,7 @@ export function ProfileBannerStudio({
     let bannerId = id || savedBannerId || editingId;
     if (!bannerId) {
       const saved = await saveBanner();
-      if (!saved) return;
+      if (!saved) return false;
       bannerId = saved;
     }
 
@@ -703,8 +703,10 @@ export function ProfileBannerStudio({
       setMessage(result.message || 'Banner profil premium berhasil dipasang.');
       await loadRows();
       await onListingChanged?.();
+      return true;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Banner profil belum dapat dipasang.');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -751,20 +753,19 @@ export function ProfileBannerStudio({
       if (autoMode) onAutoSaveComplete?.(false, 'Profil tersimpan, tetapi banner otomatis belum dapat diperbarui.');
       return false;
     }
-    try {
-      await activateBanner(saved);
-      const successMessage = autoMode
-        ? 'Profil dan banner otomatis berhasil diperbarui.'
-        : 'Banner otomatis berhasil diperbarui dan dipasang di profil.';
-      setMessage(successMessage);
-      if (autoMode) onAutoSaveComplete?.(true, successMessage);
-      return true;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Banner belum dapat diaktifkan.';
+    const activated = await activateBanner(saved);
+    if (!activated) {
+      const errorMessage = 'Banner berhasil disimpan, tetapi belum dapat diaktifkan pada profil.';
       if (autoMode) onAutoSaveComplete?.(false, errorMessage);
       return false;
     }
+
+    const successMessage = autoMode
+      ? 'Profil dan banner otomatis berhasil diperbarui.'
+      : 'Banner otomatis berhasil diperbarui dan dipasang di profil.';
+    setMessage(successMessage);
+    if (autoMode) onAutoSaveComplete?.(true, successMessage);
+    return true;
   }
 
   useEffect(() => {
