@@ -3254,3 +3254,53 @@ html {
     justify-content:flex-start;
   }
 }
+
+/* Public beta legal/help hardening */
+.legal-consent{
+  display:flex!important;
+  grid-template-columns:auto 1fr!important;
+  align-items:flex-start;
+  gap:9px!important;
+  padding:11px 12px;
+  border:1px solid #d8e5dc;
+  border-radius:12px;
+  background:#f8fbf9;
+  color:#40564a;
+  font-size:.74rem;
+  font-weight:600!important;
+  line-height:1.45;
+}
+.legal-consent input{
+  width:17px!important;
+  height:17px;
+  margin-top:2px;
+  accent-color:#1c6845;
+}
+.legal-consent a{color:#0b6bdc;font-weight:800}
+.registration-consent{margin-top:10px}
+.transaction-policy-note a{display:inline-block;margin-top:7px;font-size:.72rem}
+.account-help-links{
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  padding:14px;
+  margin-bottom:14px;
+  border:1px solid #dfe8e2;
+  border-radius:14px;
+  background:#fbfdfb;
+}
+.account-help-links a{
+  text-decoration:none;
+  padding:8px 10px;
+  border:1px solid #d7e3da;
+  border-radius:10px;
+  background:#fff;
+  color:#315942;
+  font-size:.74rem;
+  font-weight:800;
+}
+.teacher-card-actions .safety-actions{flex-basis:100%;justify-content:flex-end}
+@media(max-width:700px){
+  .account-help-links a{width:100%;text-align:center}
+  .teacher-card-actions .safety-actions{justify-content:flex-start}
+}

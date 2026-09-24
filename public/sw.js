@@ -1,8 +1,12 @@
-const CACHE_VERSION = 'gurules-pwa-v2';
+const CACHE_VERSION = 'gurules-pwa-v3';
 const APP_SHELL = [
   '/',
   '/offline.html',
   '/manifest.webmanifest',
+  '/terms.html',
+  '/transaction-policy.html',
+  '/help.html',
+  '/privacy.html',
   '/icons/gurules-192.png',
   '/icons/gurules-512.png'
 ];
