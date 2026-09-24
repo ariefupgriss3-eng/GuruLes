@@ -420,7 +420,7 @@ export function LegalAcceptanceGate({ session }: { session: SessionLike }) {
         encodeURIComponent('user_id,policy_key,policy_version');
       await api(url, {
         method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify([
           {
             user_id: session.user.id,
