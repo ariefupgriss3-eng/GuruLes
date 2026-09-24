@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import { InstructorBannerStudio } from './banner-studio';
 import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
-import { AdminSafetyPanel, BlockedUsersPanel, SafetyActions } from './safety-center';
+import { AdminSafetyPanel, BlockedUsersPanel, LegalAcceptanceGate, SafetyActions } from './safety-center';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -880,6 +880,42 @@ function App() {
         }),
       })) as { ok: boolean; login: string; message?: string };
 
+      try {
+        const temporaryAcceptanceSession = (await api('/functions/v1/login-gurules', {
+          method: 'POST',
+          body: JSON.stringify({
+            identifier: registerPhone.trim(),
+            password: registerPassword,
+          }),
+        })) as Session;
+
+        await api(
+          '/rest/v1/user_legal_acceptances?on_conflict=' +
+            encodeURIComponent('user_id,policy_key,policy_version'),
+          {
+            method: 'POST',
+            headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+            body: JSON.stringify([
+              {
+                user_id: temporaryAcceptanceSession.user.id,
+                policy_key: 'terms',
+                policy_version: '2026-09-24',
+                source: 'registration',
+              },
+              {
+                user_id: temporaryAcceptanceSession.user.id,
+                policy_key: 'privacy',
+                policy_version: '2026-09-24',
+                source: 'registration',
+              },
+            ]),
+          },
+          temporaryAcceptanceSession.access_token
+        );
+      } catch {
+        // Jika pencatatan sementara gagal, pengguna akan diminta menyetujui saat login.
+      }
+
       setPhone(registerPhone.trim());
       setPassword('');
       setLoginNotice(
@@ -1056,6 +1092,22 @@ function App() {
 
     setBookingBusy(true);
     try {
+      await api(
+        '/rest/v1/user_legal_acceptances?on_conflict=' +
+          encodeURIComponent('user_id,policy_key,policy_version'),
+        {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({
+            user_id: session.user.id,
+            policy_key: 'transaction',
+            policy_version: '2026-09-24',
+            source: 'booking',
+          }),
+        },
+        session.access_token
+      );
+
       const result = (await api(
         '/functions/v1/create-booking',
         {
@@ -1368,6 +1420,7 @@ function App() {
   return (
     <div className="app-shell">
       <PWAUpdateNotice />
+      {session && <LegalAcceptanceGate session={session} />}
       <header className="topbar">
         <a className="brand" href="#top" aria-label="GuruLes">
           <span className="brand-mark">🎓</span>
