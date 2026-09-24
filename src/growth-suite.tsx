@@ -557,7 +557,9 @@ export function InstructorGrowthStatus({
     completed_sessions?:number;
     response_rate?:number|string;
     premium_plan?:string;
+    premium_until?:string|null;
     boost_until?:string|null;
+    featured_until?:string|null;
   };
 }) {
   return (
@@ -582,9 +584,22 @@ export function InstructorGrowthStatus({
       <div><small>Rekening/Payout</small><strong>{listing.payout_verified?'✅ Terverifikasi':'Belum diverifikasi'}</strong></div>
       <div><small>Sesi selesai</small><strong>{listing.completed_sessions||0}</strong></div>
       <div><small>Response rate</small><strong>{Number(listing.response_rate||0).toFixed(0)}%</strong></div>
-      <div><small>Paket akun</small><strong>{listing.premium_plan==='premium'?'Premium':'Free'}</strong></div>
+      <div>
+        <small>Paket akun</small>
+        <strong>
+          {listing.premium_until && new Date(listing.premium_until) > new Date()
+            ? '💎 GuruLes Pro'
+            : 'Free'}
+        </strong>
+      </div>
+      {listing.premium_until&&new Date(listing.premium_until)>new Date()&&(
+        <div><small>Pro aktif</small><strong>s.d. {new Date(listing.premium_until).toLocaleDateString('id-ID')}</strong></div>
+      )}
+      {listing.featured_until&&new Date(listing.featured_until)>new Date()&&(
+        <div><small>Featured</small><strong>⭐ s.d. {new Date(listing.featured_until).toLocaleDateString('id-ID')}</strong></div>
+      )}
       {listing.boost_until&&new Date(listing.boost_until)>new Date()&&(
-        <div><small>Boost</small><strong>🚀 sampai {new Date(listing.boost_until).toLocaleDateString('id-ID')}</strong></div>
+        <div><small>Boost</small><strong>🚀 s.d. {new Date(listing.boost_until).toLocaleDateString('id-ID')}</strong></div>
       )}
     </div>
   );
