@@ -45,6 +45,10 @@ type Settings = {
   premium_enabled: boolean;
   boost_enabled: boolean;
   payment_automation_mode: string;
+  marketplace_model: 'platform_payment' | 'direct_payment';
+  ads_enabled: boolean;
+  sponsor_ads_enabled: boolean;
+  direct_payment_notice: string;
   pilot_mode: boolean;
   pilot_teacher_limit: number;
   pilot_buyer_limit: number;
@@ -73,6 +77,11 @@ const defaultSettings: Settings = {
   premium_enabled: false,
   boost_enabled: true,
   payment_automation_mode: 'manual',
+  marketplace_model: 'direct_payment',
+  ads_enabled: true,
+  sponsor_ads_enabled: true,
+  direct_payment_notice:
+    'Pembayaran dilakukan langsung antara pencari guru dan pengajar. GuruLes tidak menerima, menyimpan, atau mencairkan dana transaksi les.',
   pilot_mode: true,
   pilot_teacher_limit: 20,
   pilot_buyer_limit: 50,
@@ -155,7 +164,7 @@ export function AdminPaymentSettings({
       )) as { settings: Settings; message?: string };
       setSettings(result.settings);
       onFeeChanged?.(result.settings.platform_fee_percent);
-      setMessage(result.message || 'Pengaturan pembayaran berhasil disimpan.');
+      setMessage(result.message || 'Pengaturan model bisnis berhasil disimpan.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Pengaturan belum dapat disimpan.');
     } finally {
@@ -167,15 +176,62 @@ export function AdminPaymentSettings({
     <div className="admin-panel">
       <div className="admin-report-head">
         <div>
-          <span className="eyebrow">Model Bisnis & Pembayaran</span>
-          <h3>Launching, fee, pertumbuhan & pembayaran</h3>
+          <span className="eyebrow">Model Bisnis GuruLes</span>
+          <h3>Marketplace, monetisasi & pembayaran langsung</h3>
         </div>
         <span className="verified">
-          {settings.launch_mode ? '🎉 Launch 0%' : 'Fee ' + settings.platform_fee_percent + '%'}
+          {settings.marketplace_model === 'direct_payment'
+            ? '🤝 Direct Pay'
+            : settings.launch_mode
+              ? '🎉 Launch 0%'
+              : 'Fee ' + settings.platform_fee_percent + '%'}
         </span>
       </div>
 
       <div className="launch-admin-box">
+        <div className="direct-model-box">
+          <span className="eyebrow">Model Marketplace</span>
+          <div className="growth-switches">
+            <label>
+              <input
+                type="radio"
+                name="marketplace-model"
+                checked={settings.marketplace_model === 'direct_payment'}
+                onChange={() =>
+                  setSettings(current => ({
+                    ...current,
+                    marketplace_model: 'direct_payment',
+                    platform_fee_percent: 0,
+                    future_fee_percent: 0,
+                  }))
+                }
+              />
+              Pembayaran langsung Pengajar ↔ Orang Tua/Siswa
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="marketplace-model"
+                checked={settings.marketplace_model === 'platform_payment'}
+                onChange={() =>
+                  setSettings(current => ({
+                    ...current,
+                    marketplace_model: 'platform_payment',
+                  }))
+                }
+              />
+              Pembayaran dikelola GuruLes (legacy)
+            </label>
+          </div>
+          {settings.marketplace_model === 'direct_payment' && (
+            <div className="automation-note direct-payment-note">
+              <strong>Model seperti OLX:</strong> GuruLes tidak menerima dana les,
+              tidak melakukan payout, dan tidak memotong komisi transaksi. Income
+              berasal dari Premium, Boost, sponsor, dan iklan.
+            </div>
+          )}
+        </div>
+
         <label className="toggle-setting">
           <input
             type="checkbox"
@@ -192,7 +248,11 @@ export function AdminPaymentSettings({
           />
           <span>
             <strong>Masa Peluncuran Gratis</strong>
-            <small>Jika aktif, fee transaksi dipaksa 0%.</small>
+            <small>
+              {settings.marketplace_model === 'direct_payment'
+                ? 'Pada Direct Pay, komisi transaksi selalu 0%.'
+                : 'Jika aktif, fee transaksi dipaksa 0%.'}
+            </small>
           </span>
         </label>
 
@@ -328,6 +388,26 @@ export function AdminPaymentSettings({
           <label>
             <input
               type="checkbox"
+              checked={settings.ads_enabled}
+              onChange={event =>
+                setSettings(current => ({ ...current, ads_enabled: event.target.checked }))
+              }
+            />
+            Iklan GuruLes aktif
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={settings.sponsor_ads_enabled}
+              onChange={event =>
+                setSettings(current => ({ ...current, sponsor_ads_enabled: event.target.checked }))
+              }
+            />
+            Sponsor langsung aktif
+          </label>
+          <label>
+            <input
+              type="checkbox"
               checked={settings.boost_enabled}
               onChange={event =>
                 setSettings(current => ({ ...current, boost_enabled: event.target.checked }))
@@ -347,11 +427,40 @@ export function AdminPaymentSettings({
           </label>
         </div>
         <div className="automation-note">
-          Pembayaran saat ini: <strong>manual via Lynk.id/QRIS</strong>.
-          Mode otomatis baru diaktifkan setelah payment gateway/webhook tersedia.
+          {settings.marketplace_model === 'direct_payment' ? (
+            <>
+              Pembayaran les: <strong>langsung antara pengguna dan pengajar</strong>.
+              GuruLes berfokus pada marketplace, reputasi, Premium/Boost, serta sponsor/iklan.
+            </>
+          ) : (
+            <>
+              Pembayaran legacy: <strong>manual via Lynk.id/QRIS</strong>.
+            </>
+          )}
         </div>
       </div>
 
+      {settings.marketplace_model === 'direct_payment' ? (
+        <div className="branding-form-grid">
+          <label className="brand-tagline-field">
+            Pemberitahuan pembayaran langsung
+            <textarea
+              rows={3}
+              value={settings.direct_payment_notice}
+              onChange={event =>
+                setSettings(current => ({
+                  ...current,
+                  direct_payment_notice: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <div className="automation-note">
+            Fee transaksi GuruLes: <strong>0%</strong>. Pengaturan bank, QRIS,
+            payout, refund, dan pencairan GuruLes tidak digunakan pada booking baru.
+          </div>
+        </div>
+      ) : (
       <div className="branding-form-grid">
         <label>
           Fee GuruLes (%)
@@ -464,12 +573,13 @@ export function AdminPaymentSettings({
           />
         </label>
       </div>
+      )}
 
       {message && <div className="form-success">{message}</div>}
 
       <div className="branding-actions">
         <button className="button primary" disabled={busy} onClick={() => void save()}>
-          {busy ? 'Menyimpan...' : 'Simpan Pengaturan Pembayaran'}
+          {busy ? 'Menyimpan...' : 'Simpan Model Bisnis'}
         </button>
       </div>
     </div>
@@ -551,13 +661,24 @@ export function BookingTransactionControls({
 
   const buyer = role === 'parent' || role === 'student';
   const instructor = role === 'instructor';
+  const directPayment = settings.marketplace_model === 'direct_payment';
 
   return (
     <div className="transaction-box">
-      {payment && (
+      {!directPayment && payment && (
         <div className="transaction-status-row">
           <span>Pembayaran: <strong>{payment.payment_status}</strong></span>
           <span>Pencairan: <strong>{payment.payout_status}</strong></span>
+        </div>
+      )}
+
+      {directPayment && ['requested','accepted','in_progress','completed'].includes(booking.status) && (
+        <div className="direct-payment-booking-note">
+          <strong>🤝 Pembayaran langsung</strong>
+          <small>{settings.direct_payment_notice}</small>
+          {booking.status === 'accepted' && (
+            <span>Gunakan Chat GuruLes untuk menyepakati metode dan waktu pembayaran.</span>
+          )}
         </div>
       )}
 
@@ -580,7 +701,7 @@ export function BookingTransactionControls({
         </div>
       )}
 
-      {buyer && booking.status === 'accepted' && payment?.payment_status !== 'paid' && (
+      {!directPayment && buyer && booking.status === 'accepted' && payment?.payment_status !== 'paid' && (
         <div className="payment-confirm-box">
           <strong>{settings.payment_method_label}</strong>
           <small>{settings.payment_instructions}</small>
@@ -639,7 +760,8 @@ export function BookingTransactionControls({
         </div>
       )}
 
-      {isAdmin &&
+      {!directPayment &&
+        isAdmin &&
         booking.status === 'accepted' &&
         payment?.submitted_at &&
         payment.payment_status === 'pending' && (
@@ -670,7 +792,9 @@ export function BookingTransactionControls({
         )}
 
       {Number(booking.package_sessions_total || 1) === 1 &&
-        ['paid', 'in_progress'].includes(booking.status) &&
+        (directPayment
+          ? ['accepted', 'in_progress'].includes(booking.status)
+          : ['paid', 'in_progress'].includes(booking.status)) &&
         ((instructor && !booking.instructor_confirmed_complete) ||
           (buyer && !booking.buyer_confirmed_complete)) && (
           <button
@@ -682,7 +806,8 @@ export function BookingTransactionControls({
           </button>
         )}
 
-      {isAdmin &&
+      {!directPayment &&
+        isAdmin &&
         booking.status === 'cancelled' &&
         payment?.payment_status === 'refund_pending' && (
           <button
@@ -703,7 +828,8 @@ export function BookingTransactionControls({
           </button>
         )}
 
-      {isAdmin &&
+      {!directPayment &&
+        isAdmin &&
         booking.status === 'completed' &&
         payment?.payout_status === 'eligible' && (
           <button
@@ -724,7 +850,7 @@ export function BookingTransactionControls({
           </button>
         )}
 
-      {booking.status === 'completed' && !isAdmin && (
+      {booking.status === 'completed' && !isAdmin && !directPayment && (
         <small>
           {payment?.payout_status === 'paid'
             ? 'Hak pengajar sudah dicairkan.'
