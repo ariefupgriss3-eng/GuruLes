@@ -25,13 +25,33 @@ type Order = {
   product_id: string;
   customer_type: 'instructor' | 'sponsor';
   customer_name: string;
+  instructor_id?: string | null;
+  listing_id?: string | null;
   amount: number;
   status: 'lead' | 'pending' | 'paid' | 'active' | 'completed' | 'cancelled';
   starts_at: string | null;
   ends_at: string | null;
   payment_reference: string | null;
+  submitted_at?: string | null;
+  verified_at?: string | null;
+  admin_note?: string;
   notes: string;
   created_at: string;
+};
+
+type MonetizationSettings = {
+  lynk_url?: string;
+  bank_name?: string;
+  bank_account_name?: string;
+  bank_account_number?: string;
+};
+
+type InstructorListingStatus = {
+  id: string;
+  premium_plan?: string;
+  premium_until?: string | null;
+  boost_until?: string | null;
+  featured_until?: string | null;
 };
 
 async function api(path: string, options: RequestInit = {}, token?: string) {
@@ -149,6 +169,274 @@ export function PublicRateCard() {
   );
 }
 
+
+export function InstructorMonetizationShop({
+  session,
+  listing,
+  onChanged,
+}: {
+  session: SessionLike;
+  listing: InstructorListingStatus;
+  onChanged?: () => void | Promise<void>;
+}) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [settings, setSettings] = useState<MonetizationSettings>({});
+  const [referenceByOrder, setReferenceByOrder] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState('');
+  const [busyId, setBusyId] = useState('');
+
+  async function load() {
+    const [productRows, orderRows, paymentSettings] = await Promise.all([
+      api(
+        '/rest/v1/monetization_products?audience=eq.instructor&is_active=eq.true' +
+        '&select=id,code,name,audience,product_type,description,price,duration_days,placement,badge,is_active,sort_order' +
+        '&order=sort_order.asc',
+        {},
+        session.access_token
+      ),
+      api(
+        '/rest/v1/monetization_orders?instructor_id=eq.' +
+        encodeURIComponent(session.user.id) +
+        '&select=id,product_id,customer_type,customer_name,instructor_id,listing_id,amount,status,starts_at,ends_at,payment_reference,submitted_at,verified_at,admin_note,notes,created_at' +
+        '&order=created_at.desc',
+        {},
+        session.access_token
+      ),
+      api('/functions/v1/gurules-payment-settings', { method: 'GET' }, session.access_token),
+    ]);
+    setProducts(productRows as Product[]);
+    setOrders(orderRows as Order[]);
+    setSettings(paymentSettings as MonetizationSettings);
+  }
+
+  useEffect(() => {
+    void load().catch(error =>
+      setMessage(error instanceof Error ? error.message : 'Paket promosi belum dapat dimuat.')
+    );
+  }, [session.access_token]);
+
+  const pendingFor = (productId: string) =>
+    orders.find(
+      row =>
+        row.product_id === productId &&
+        ['lead', 'pending', 'paid'].includes(row.status)
+    );
+
+  async function choose(product: Product) {
+    setBusyId(product.id);
+    setMessage('');
+    try {
+      const orderId = (await api(
+        '/rest/v1/rpc/create_instructor_monetization_order',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            p_product_id: product.id,
+            p_payment_reference: null,
+          }),
+        },
+        session.access_token
+      )) as string;
+      await load();
+      setMessage(
+        'Order ' + product.name +
+        ' dibuat. Lakukan pembayaran lalu masukkan nomor invoice/referensi pembayaran.'
+      );
+      if (settings.lynk_url) {
+        window.open(settings.lynk_url, '_blank', 'noopener,noreferrer');
+      }
+      setReferenceByOrder(current => ({ ...current, [orderId]: '' }));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Order belum dapat dibuat.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function submitReference(order: Order) {
+    const reference = (referenceByOrder[order.id] ?? order.payment_reference ?? '').trim();
+    if (!reference) {
+      setMessage('Masukkan nomor invoice atau referensi pembayaran terlebih dahulu.');
+      return;
+    }
+    setBusyId(order.id);
+    setMessage('');
+    try {
+      await api(
+        '/rest/v1/rpc/submit_instructor_monetization_payment',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            p_order_id: order.id,
+            p_payment_reference: reference,
+          }),
+        },
+        session.access_token
+      );
+      await load();
+      setMessage('Bukti referensi terkirim. Admin akan memverifikasi dan paket aktif otomatis setelah disetujui.');
+      await onChanged?.();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Referensi pembayaran belum dapat dikirim.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  function activeLabel(product: Product) {
+    const value =
+      product.product_type === 'boost'
+        ? listing.boost_until
+        : product.product_type === 'featured'
+          ? listing.featured_until
+          : product.product_type === 'premium'
+            ? listing.premium_until
+            : null;
+    return value && new Date(value) > new Date()
+      ? 'Aktif s.d. ' + new Date(value).toLocaleDateString('id-ID')
+      : '';
+  }
+
+  return (
+    <section className="instructor-monetization-shop">
+      <div className="growth-panel-head">
+        <div>
+          <span className="eyebrow">Promosikan Profil</span>
+          <h3>Boost, Featured & GuruLes Pro</h3>
+          <p>
+            Pembayaran les tetap langsung ke pengajar. Paket ini hanya untuk promosi
+            profil dan visibilitas di GuruLes.
+          </p>
+        </div>
+        <span className="beta-price-chip">Self-service</span>
+      </div>
+
+      <div className="instructor-shop-grid">
+        {products.map(product => {
+          const pending = pendingFor(product.id);
+          const active = activeLabel(product);
+          return (
+            <article className="instructor-shop-card" key={product.id}>
+              {product.badge && <span className="rate-badge">{product.badge}</span>}
+              <div className="rate-icon">{productIcon(product.product_type)}</div>
+              <strong>{product.name}</strong>
+              <p>{product.description}</p>
+              <div className="rate-price">{rupiah(product.price)}</div>
+              <small>{product.duration_days} hari · {placementLabel(product.placement)}</small>
+              {active && <span className="shop-active">✓ {active}</span>}
+              {pending ? (
+                <span className="shop-pending">⏳ Menunggu verifikasi</span>
+              ) : (
+                <button
+                  className="button primary"
+                  disabled={busyId === product.id}
+                  onClick={() => void choose(product)}
+                >
+                  {busyId === product.id ? 'Memproses...' : active ? 'Perpanjang Paket' : 'Pilih Paket'}
+                </button>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      {orders.some(row => ['lead', 'pending', 'paid'].includes(row.status)) && (
+        <div className="self-service-payment">
+          <div>
+            <span className="eyebrow">Pembayaran Promosi GuruLes</span>
+            <h4>Bayar lalu kirim referensi</h4>
+            <p>
+              Pembayaran ini untuk paket promosi GuruLes, bukan pembayaran les.
+            </p>
+          </div>
+
+          {settings.lynk_url && (
+            <a
+              className="button primary"
+              href={settings.lynk_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Bayar via Lynk.id
+            </a>
+          )}
+
+          {!settings.lynk_url && settings.bank_account_number && (
+            <div className="monetization-bank">
+              <strong>{settings.bank_name || 'Transfer Bank'}</strong>
+              <span>{settings.bank_account_number}</span>
+              <small>a.n. {settings.bank_account_name}</small>
+            </div>
+          )}
+
+          <div className="self-service-order-list">
+            {orders
+              .filter(row => ['lead', 'pending', 'paid'].includes(row.status))
+              .map(order => {
+                const product = products.find(item => item.id === order.product_id);
+                return (
+                  <div className="self-service-order" key={order.id}>
+                    <div>
+                      <strong>{product?.name || 'Paket Promosi'}</strong>
+                      <span>{rupiah(order.amount)}</span>
+                      <small>
+                        Order {order.id.slice(0, 8).toUpperCase()}
+                        {order.submitted_at ? ' · referensi sudah dikirim' : ''}
+                      </small>
+                    </div>
+                    <div className="self-service-reference">
+                      <input
+                        value={referenceByOrder[order.id] ?? order.payment_reference ?? ''}
+                        onChange={event =>
+                          setReferenceByOrder(current => ({
+                            ...current,
+                            [order.id]: event.target.value,
+                          }))
+                        }
+                        placeholder="Nomor invoice / referensi pembayaran"
+                        maxLength={160}
+                      />
+                      <button
+                        className="button secondary"
+                        disabled={busyId === order.id}
+                        onClick={() => void submitReference(order)}
+                      >
+                        {busyId === order.id ? 'Mengirim...' : 'Kirim Referensi'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {orders.some(row => ['active', 'completed', 'cancelled'].includes(row.status)) && (
+        <details className="monetization-history">
+          <summary>Riwayat pembelian promosi</summary>
+          <div>
+            {orders
+              .filter(row => ['active', 'completed', 'cancelled'].includes(row.status))
+              .slice(0, 10)
+              .map(order => {
+                const product = products.find(item => item.id === order.product_id);
+                return (
+                  <p key={order.id}>
+                    <strong>{product?.name || 'Paket'}</strong> · {rupiah(order.amount)} · {order.status}
+                    {order.ends_at ? ' · s.d. ' + new Date(order.ends_at).toLocaleDateString('id-ID') : ''}
+                  </p>
+                );
+              })}
+          </div>
+        </details>
+      )}
+
+      {message && <div className="form-success">{message}</div>}
+    </section>
+  );
+}
+
 export function AdminMonetizationPanel({ session }: { session: SessionLike }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -172,7 +460,7 @@ export function AdminMonetizationPanel({ session }: { session: SessionLike }) {
       ),
       api(
         '/rest/v1/monetization_orders?' +
-        'select=id,product_id,customer_type,customer_name,amount,status,starts_at,ends_at,payment_reference,notes,created_at' +
+        'select=id,product_id,customer_type,customer_name,instructor_id,listing_id,amount,status,starts_at,ends_at,payment_reference,submitted_at,verified_at,admin_note,notes,created_at' +
         '&order=created_at.desc',
         {},
         session.access_token
@@ -305,6 +593,41 @@ export function AdminMonetizationPanel({ session }: { session: SessionLike }) {
     await load();
   }
 
+  async function verifyInstructorOrder(row: Order, approve: boolean) {
+    const note = approve
+      ? 'Pembayaran promosi diverifikasi Admin.'
+      : (window.prompt('Alasan penolakan / catatan Admin:', 'Referensi pembayaran belum dapat diverifikasi.') || '');
+    if (!approve && !note.trim()) return;
+
+    setMessage('');
+    try {
+      const result = await api(
+        '/rest/v1/rpc/verify_monetization_order',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            p_order_id: row.id,
+            p_approve: approve,
+            p_admin_note: note,
+          }),
+        },
+        session.access_token
+      ) as { active_until?: string; status?: string };
+
+      await load();
+      setMessage(
+        approve
+          ? 'Pembayaran terverifikasi. Benefit pengajar aktif otomatis' +
+            (result.active_until
+              ? ' sampai ' + new Date(result.active_until).toLocaleDateString('id-ID') + '.'
+              : '.')
+          : 'Order ditolak.'
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Verifikasi order belum berhasil.');
+    }
+  }
+
   return (
     <section className="monetization-admin">
       <div className="admin-report-head">
@@ -377,7 +700,7 @@ export function AdminMonetizationPanel({ session }: { session: SessionLike }) {
         <div className="rate-admin-head">
           <div>
             <span className="eyebrow">Order Baru</span>
-            <h4>Catat penjualan promosi / sponsor</h4>
+            <h4>Catat penjualan sponsor manual</h4>
           </div>
         </div>
 
@@ -385,7 +708,7 @@ export function AdminMonetizationPanel({ session }: { session: SessionLike }) {
           Paket
           <select value={productId} onChange={event => setProductId(event.target.value)}>
             <option value="">Pilih paket</option>
-            {products.filter(row => row.is_active).map(row => (
+            {products.filter(row => row.is_active && row.audience === 'sponsor').map(row => (
               <option value={row.id} key={row.id}>
                 {row.name} · {rupiah(row.price)}
               </option>
@@ -480,19 +803,38 @@ export function AdminMonetizationPanel({ session }: { session: SessionLike }) {
                       : ''}
                   </small>
                 </div>
-                <select
-                  value={row.status}
-                  onChange={event =>
-                    void updateOrder(row, event.target.value as Order['status'])
-                  }
-                >
-                  <option value="lead">Lead</option>
-                  <option value="pending">Menunggu Bayar</option>
-                  <option value="paid">Sudah Dibayar</option>
-                  <option value="active">Aktif</option>
-                  <option value="completed">Selesai</option>
-                  <option value="cancelled">Batal</option>
-                </select>
+                {row.customer_type === 'instructor' && ['pending', 'paid'].includes(row.status) ? (
+                  <div className="verify-order-actions">
+                    <small>{row.payment_reference ? 'Ref: ' + row.payment_reference : 'Belum ada referensi'}</small>
+                    <button
+                      className="button primary small"
+                      disabled={!row.payment_reference}
+                      onClick={() => void verifyInstructorOrder(row, true)}
+                    >
+                      ✓ Verifikasi & Aktifkan
+                    </button>
+                    <button
+                      className="button secondary small"
+                      onClick={() => void verifyInstructorOrder(row, false)}
+                    >
+                      Tolak
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={row.status}
+                    onChange={event =>
+                      void updateOrder(row, event.target.value as Order['status'])
+                    }
+                  >
+                    <option value="lead">Lead</option>
+                    <option value="pending">Menunggu Bayar</option>
+                    <option value="paid">Sudah Dibayar</option>
+                    <option value="active">Aktif</option>
+                    <option value="completed">Selesai</option>
+                    <option value="cancelled">Batal</option>
+                  </select>
+                )}
               </article>
             );
           })
