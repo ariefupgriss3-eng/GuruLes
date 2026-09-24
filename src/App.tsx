@@ -95,6 +95,7 @@ type Listing = {
   profile_banner_id: string | null;
   profile_banner_template: string | null;
   profile_banner_updated_at: string | null;
+  auto_profile_banner_enabled: boolean;
 };
 
 type Session = {
@@ -394,6 +395,7 @@ function App() {
   const [brandBusy, setBrandBusy] = useState(false);
   const [brandError, setBrandError] = useState('');
   const [brandSuccess, setBrandSuccess] = useState('');
+  const [bannerAutoSaveSignal, setBannerAutoSaveSignal] = useState(0);
 
   async function loadPublicListings() {
     setLoading(true);
@@ -415,7 +417,7 @@ function App() {
 
   async function loadAdminListings(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at,auto_profile_banner_enabled';
     const data = (await api(
       '/rest/v1/instructor_listings?select=' +
         encodeURIComponent(select) +
@@ -454,7 +456,7 @@ function App() {
 
   async function loadOwnInstructorListing(activeSession: Session) {
     const select =
-      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at';
+      'id,instructor_id,display_name,title,category,city,village,district,regency,province,service_methods,price_per_session,duration_minutes,years_experience,verification_status,is_active,average_rating,review_count,bio,avatar_url,cover_url,tagline,branding_updated_at,founding_teacher_no,founding_teacher_since,founding_free_until,identity_verified,credential_verified,experience_verified,payout_verified,completed_sessions,response_rate,premium_plan,premium_until,boost_until,latitude,longitude,service_radius_km,profile_banner_url,profile_banner_id,profile_banner_template,profile_banner_updated_at,auto_profile_banner_enabled';
     const data = (await api(
       '/rest/v1/instructor_listings?instructor_id=eq.' +
         encodeURIComponent(activeSession.user.id) +
@@ -1140,8 +1142,17 @@ function App() {
       setBrandCoverFile(null);
       setBrandAvatarPreview('');
       setBrandCoverPreview('');
-      setBrandSuccess(result.message || 'Branding berhasil disimpan.');
-      await loadPublicListings();    } catch (error) {
+
+      const refreshedListing = await loadOwnInstructorListing(session);
+      await loadPublicListings();
+
+      if (refreshedListing?.auto_profile_banner_enabled !== false) {
+        setBrandSuccess('Profil berhasil disimpan. Banner otomatis sedang diperbarui...');
+        setBannerAutoSaveSignal(value => value + 1);
+      } else {
+        setBrandSuccess(result.message || 'Profil berhasil disimpan.');
+      }
+    } catch (error) {
       setBrandError(
         error instanceof Error ? error.message : 'Branding belum dapat disimpan.'
       );
@@ -1242,7 +1253,6 @@ function App() {
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'schedule', icon: '📅', label: 'Jadwal' },
           { id: 'growth', icon: '🚀', label: 'Pertumbuhan' },
-          { id: 'banner', icon: '🎨', label: 'Banner Profil' },
           { id: 'profile', icon: '👤', label: 'Profil' },
           { id: 'account', icon: '🔐', label: 'Akun' },
         ]
@@ -2158,32 +2168,7 @@ function App() {
                         </div>
                       )}
                     </div>
-                    <div hidden={dashboardTab !== 'banner'}>
-                      {ownListing ? (
-                        <>
-                          <InstructorBannerStudio
-                            userId={profile.id}
-                            listing={ownListing}
-                            phone={profile.phone}
-                          />
-                          <ProfileBannerStudio
-                            session={session}
-                            listing={ownListing}
-                            phone={profile.phone}
-                            onListingChanged={async () => {
-                              await Promise.all([
-                                loadOwnInstructorListing(session),
-                                loadPublicListings(),
-                              ]);
-                            }}
-                          />
-                        </>
-                      ) : (
-                        <div className="status-box">
-                          Lengkapi profil jasa pengajar sebelum membuat banner promosi.
-                        </div>
-                      )}
-                    </div>
+
                   </>
                 )}
 
@@ -2197,9 +2182,9 @@ function App() {
                         <span className="eyebrow">Profil & Branding Pengajar</span>
                         <h3>Lengkapi profil agar lebih meyakinkan</h3>
                         <p>
-                          Atur pengalaman mengajar, foto/logo, banner, dan
-                          tagline. Perubahan ini tidak mengubah status
-                          verifikasi Anda.
+                          Atur foto, wilayah layanan, pengalaman, tagline, dan
+                          Banner Otomatis dalam satu halaman. Perubahan ini tidak
+                          mengubah status verifikasi Anda.
                         </p>
                       </div>
                       {ownListing && (
@@ -2286,8 +2271,8 @@ function App() {
                           </label>
 
                           <label className="brand-upload">
-                            <span>Banner / Cover</span>
-                            <small>Gunakan gambar horizontal · maks. 5 MB</small>
+                            <span>Cover Manual (opsional)</span>
+                            <small>Fallback jika Banner Otomatis dinonaktifkan · maks. 5 MB</small>
                             <input
                               type="file"
                               accept="image/jpeg,image/png,image/webp"
@@ -2440,6 +2425,49 @@ function App() {
                           </label>
                         </div>
 
+                        <ProfileBannerStudio
+                          embedded
+                          session={session}
+                          listing={ownListing}
+                          phone={profile.phone}
+                          autoSaveSignal={bannerAutoSaveSignal}
+                          onAutoEnabledChanged={enabled => {
+                            setOwnListing(current =>
+                              current
+                                ? { ...current, auto_profile_banner_enabled: enabled }
+                                : current
+                            );
+                          }}
+                          onAutoSaveComplete={(ok, message) => {
+                            if (ok) {
+                              setBrandError('');
+                              setBrandSuccess(message);
+                            } else {
+                              setBrandSuccess('');
+                              setBrandError(message);
+                            }
+                          }}
+                          onListingChanged={async () => {
+                            await Promise.all([
+                              loadOwnInstructorListing(session),
+                              loadPublicListings(),
+                            ]);
+                          }}
+                        />
+
+                        <details className="profile-social-banner-details">
+                          <summary>Banner untuk Promosi Media Sosial</summary>
+                          <p>
+                            Opsional: buat banner feed, flyer, atau story tanpa mengubah
+                            Banner Otomatis profil publik.
+                          </p>
+                          <InstructorBannerStudio
+                            userId={profile.id}
+                            listing={ownListing}
+                            phone={profile.phone}
+                          />
+                        </details>
+
                         {brandError && (
                           <div className="form-error">{brandError}</div>
                         )}
@@ -2455,7 +2483,7 @@ function App() {
                           >
                             {brandBusy
                               ? 'Menyimpan...'
-                              : 'Simpan Profil & Branding'}
+                              : 'Simpan Profil'}
                           </button>
                         </div>
                       </>
