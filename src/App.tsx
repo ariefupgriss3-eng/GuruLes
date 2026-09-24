@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import {
   AdminPaymentSettings,
   BookingTransactionControls,
@@ -1252,6 +1253,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      <PWAUpdateNotice />
       <header className="topbar">
         <a className="brand" href="#top" aria-label="GuruLes">
           <span className="brand-mark">🎓</span>
@@ -1275,6 +1277,8 @@ function App() {
           <a href="#pengajar">Cari Guru</a>
           <a href="#cara-kerja">Cara Kerja</a>
         </nav>
+
+        <PWAInstallButton />
 
         {session ? (
           <div className="account-strip">
