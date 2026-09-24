@@ -49,3 +49,10 @@ Build release awal bisa belum signed. Untuk Google Play, buat Upload Key/keystor
 - Siapkan Play Console, data safety, content rating, target audience, dan store listing.
 - Gunakan package name `com.arieftoteles.gurules` secara permanen; jangan diubah setelah aplikasi diterbitkan.
 - Aktifkan Play App Signing saat rilis produksi.
+
+
+## Build otomatis dari GitHub
+
+Workflow `.github/workflows/android-aab.yml` dapat dijalankan manual dari tab **Actions → Build Android AAB (unsigned) → Run workflow**.
+
+Workflow akan membangun frontend, membuat container Android, menjalankan `bundleRelease`, lalu mengunggah AAB sebagai artifact selama 7 hari. Artifact ini untuk validasi teknis dan belum siap dikirim ke Play Store sampai release signing dengan Upload Key dikonfigurasi.
