@@ -239,3 +239,41 @@
 @media(max-width:700px){
   .premium-auto-toggle{max-width:100%}
 }
+
+/* Profil sebagai aksi utama; update banner manual hanya aksi sekunder */
+.premium-banner-studio.embedded .premium-refresh-button{
+  background:#f3f8f5;
+  color:#315b46;
+  border-color:#cdded3;
+  font-weight:800;
+}
+.premium-banner-studio.embedded .premium-refresh-button:hover{
+  background:#e8f2ec;
+}
+.profile-save-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:16px;
+}
+.profile-save-actions small{
+  color:#667d6f;
+  font-size:.72rem;
+}
+.profile-save-status{
+  margin-top:8px;
+}
+.profile-save-status:empty{
+  display:none;
+}
+@media(max-width:700px){
+  .profile-save-actions{
+    align-items:stretch;
+    flex-direction:column-reverse;
+  }
+  .profile-save-actions .button{
+    width:100%;
+  }
+}
