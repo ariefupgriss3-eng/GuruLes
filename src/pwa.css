@@ -1,0 +1,9 @@
+.pwa-install-wrap{position:relative;display:flex;align-items:center}
+.pwa-install-button{white-space:nowrap;background:#0b6bdc;color:#fff;border-color:#0b6bdc}
+.pwa-install-button:hover{filter:brightness(.96)}
+.pwa-installed-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#e9fbf3;color:#087457;font-size:.78rem;font-weight:800;border:1px solid #bdeedc;white-space:nowrap}
+.pwa-ios-tip{position:absolute;right:0;top:calc(100% + 10px);z-index:80;width:min(310px,80vw);background:#fff;color:#17324d;padding:12px 14px;border:1px solid #d8e7f7;border-radius:14px;box-shadow:0 16px 40px rgba(27,75,115,.18);font-size:.82rem;line-height:1.45}
+.pwa-update-toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:150;display:flex;align-items:center;gap:12px;background:#123b61;color:#fff;padding:11px 12px 11px 16px;border-radius:16px;box-shadow:0 16px 45px rgba(10,42,70,.28);max-width:calc(100vw - 28px);font-size:.86rem}
+.pwa-update-toast button{border:0;background:#fff;color:#123b61;font-weight:800;border-radius:10px;padding:8px 10px;cursor:pointer}
+@media(max-width:860px){.pwa-install-wrap{order:3}.pwa-install-button{padding:8px 10px;font-size:.75rem}.pwa-ios-tip{right:-8px}}
+@media(max-width:560px){.pwa-installed-badge{display:none}.pwa-update-toast{bottom:76px;width:calc(100vw - 24px);justify-content:space-between}}
