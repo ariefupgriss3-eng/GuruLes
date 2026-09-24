@@ -1238,6 +1238,39 @@ function App() {
     setDashboardTab('summary');
   }, [session?.user.id, isAdmin, profile?.role]);
 
+  useEffect(() => {
+    if (!session || !isAdmin || dashboardTab !== 'instructors') return;
+
+    let active = true;
+    const refreshAdminInstructors = async () => {
+      try {
+        await Promise.all([
+          loadAdminListings(session),
+          loadAdminProfiles(session),
+        ]);
+      } catch {
+        // Pertahankan data terakhir bila refresh sementara gagal.
+      }
+    };
+
+    void refreshAdminInstructors();
+    const timer = window.setInterval(() => {
+      if (active) void refreshAdminInstructors();
+    }, 15000);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [dashboardTab, isAdmin, session?.access_token]);
+
+  const pendingAdminListings = adminListings.filter(item =>
+    ['submitted', 'draft'].includes(item.verification_status)
+  );
+  const otherAdminListings = adminListings.filter(
+    item => !['submitted', 'draft'].includes(item.verification_status)
+  );
+
   const dashboardTabs = isAdmin
     ? [
         { id: 'summary', icon: '📊', label: 'Ringkasan' },
@@ -1747,6 +1780,11 @@ function App() {
                   {tab.id === 'orders' && bookings.length > 0 && (
                     <b>{bookings.length}</b>
                   )}
+                  {isAdmin &&
+                    tab.id === 'instructors' &&
+                    pendingAdminListings.length > 0 && (
+                      <b>{pendingAdminListings.length}</b>
+                    )}
                 </button>
               ))}
             </div>
@@ -1772,6 +1810,27 @@ function App() {
                   className="admin-panel"
                   hidden={dashboardTab !== 'instructors'}
                 >
+                  <div className="admin-instructor-head">
+                    <div>
+                      <span className="eyebrow">Verifikasi Pengajar</span>
+                      <h3>Pendaftaran Pengajar</h3>
+                      <p>
+                        Pendaftar baru berstatus submitted/draft muncul otomatis di sini.
+                      </p>
+                    </div>
+                    <button
+                      className="button secondary small"
+                      onClick={() =>
+                        void Promise.all([
+                          loadAdminListings(session),
+                          loadAdminProfiles(session),
+                        ])
+                      }
+                    >
+                      ↻ Segarkan
+                    </button>
+                  </div>
+
                 <div className="admin-growth-summary">
                   <div>
                     <strong>{adminListings.length}</strong>
@@ -1787,15 +1846,9 @@ function App() {
                     </strong>
                     <span>Terverifikasi</span>
                   </div>
-                  <div>
-                    <strong>
-                      {
-                        adminListings.filter(
-                          item => item.founding_teacher_no != null
-                        ).length
-                      }
-                    </strong>
-                    <span>Pengajar Perintis</span>
+                  <div className={pendingAdminListings.length > 0 ? 'pending-stat' : ''}>
+                    <strong>{pendingAdminListings.length}</strong>
+                    <span>Menunggu Verifikasi</span>
                   </div>
                   <div>
                     <strong>
@@ -1811,8 +1864,71 @@ function App() {
                   </div>
                 </div>
 
+                {pendingAdminListings.length > 0 && (
+                  <section className="admin-pending-section">
+                    <div className="admin-pending-head">
+                      <div>
+                        <span className="eyebrow">Pendaftaran Baru</span>
+                        <h4>Menunggu Verifikasi Admin</h4>
+                      </div>
+                      <span className="pending-count">{pendingAdminListings.length} baru</span>
+                    </div>
+                    <div className="admin-list pending-list">
+                      {pendingAdminListings.map(item => (
+                        <div className="admin-row admin-row-pending" key={item.id}>
+                          <div>
+                            <strong>{item.display_name}</strong>
+                            <span>
+                              {item.title} · {item.category} · {item.regency || item.city}
+                              {item.province ? ', ' + item.province : ''} ·{' '}
+                              {rupiah(item.price_per_session)}
+                            </span>
+                            <small>Belum tampil publik sampai diverifikasi Admin.</small>
+                          </div>
+                          <div className="admin-actions">
+                            <AdminTrustControls
+                              session={session}
+                              listing={item}
+                              onChanged={() =>
+                                Promise.all([
+                                  loadAdminListings(session),
+                                  loadPublicListings(),
+                                ]).then(() => undefined)
+                              }
+                            />
+                            <span className={'status-pill ' + item.verification_status}>
+                              {item.verification_status === 'submitted'
+                                ? 'Menunggu'
+                                : item.verification_status}
+                            </span>
+                            <button
+                              className="button primary small"
+                              disabled={adminBusyId === item.id}
+                              onClick={() => void moderateListing(item.id, 'verify')}
+                            >
+                              Verifikasi
+                            </button>
+                            <button
+                              className="button secondary small"
+                              disabled={adminBusyId === item.id}
+                              onClick={() => void moderateListing(item.id, 'reject')}
+                            >
+                              Tolak
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <div className="admin-all-head">
+                  <strong>Pengajar Lainnya</strong>
+                  <span>{otherAdminListings.length} data</span>
+                </div>
+
                 <div className="admin-list">
-                  {adminListings.map(item => (
+                  {otherAdminListings.map(item => (
                     <div className="admin-row" key={item.id}>
                       <div>
                         <strong>{item.display_name}</strong>

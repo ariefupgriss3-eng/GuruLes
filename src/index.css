@@ -3139,3 +3139,94 @@ html {
     padding: 9px;
   }
 }
+
+
+/* Admin instructor registration inbox */
+.admin-instructor-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  padding:20px;
+  border-bottom:1px solid #e4ebe6;
+  background:linear-gradient(180deg,#fbfdfb,#f7faf8);
+}
+.admin-instructor-head h3{
+  margin:5px 0 4px;
+  color:#204b36;
+  font-size:1.35rem;
+}
+.admin-instructor-head p{
+  margin:0;
+  color:#6a776f;
+  font-size:.8rem;
+}
+.admin-growth-summary .pending-stat{
+  border-color:#e7c96f;
+  background:#fff9e8;
+}
+.admin-growth-summary .pending-stat strong{
+  color:#8a6411;
+}
+.admin-pending-section{
+  margin:18px 20px;
+  overflow:hidden;
+  border:1px solid #ead38b;
+  border-radius:16px;
+  background:#fffdf6;
+}
+.admin-pending-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px 16px;
+  border-bottom:1px solid #f0dfaa;
+  background:#fff8df;
+}
+.admin-pending-head h4{
+  margin:3px 0 0;
+  color:#644e13;
+  font-size:1rem;
+}
+.pending-count{
+  padding:6px 10px;
+  border-radius:999px;
+  background:#f0c95a;
+  color:#5d470d;
+  font-size:.72rem;
+  font-weight:900;
+}
+.pending-list .admin-row{
+  background:#fffef9;
+}
+.admin-row-pending{
+  border-left:4px solid #e0b83f;
+}
+.admin-row-pending small{
+  color:#8a7335;
+  font-size:.72rem;
+}
+.admin-all-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 20px 8px;
+  border-top:1px solid #edf1ee;
+  color:#506158;
+}
+.admin-all-head span{
+  color:#7a877f;
+  font-size:.75rem;
+}
+@media(max-width:640px){
+  .admin-instructor-head,
+  .admin-pending-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .admin-instructor-head .button{
+    width:100%;
+  }
+}
