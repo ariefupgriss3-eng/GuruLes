@@ -3304,3 +3304,30 @@ html {
   .account-help-links a{width:100%;text-align:center}
   .teacher-card-actions .safety-actions{justify-content:flex-start}
 }
+
+
+/* Direct-payment marketplace model */
+.direct-model-box{
+  padding:14px;
+  margin-bottom:14px;
+  border:1px solid #cfe1d6;
+  border-radius:14px;
+  background:linear-gradient(145deg,#f7fcf9,#eef8f2);
+}
+.direct-payment-note{
+  border-color:#b9dac5!important;
+  background:#eef8f2!important;
+  color:#315745!important;
+}
+.direct-payment-booking-note{
+  display:grid;
+  gap:5px;
+  margin:10px 0;
+  padding:11px 12px;
+  border:1px solid #cae0d2;
+  border-radius:12px;
+  background:#f4faf6;
+}
+.direct-payment-booking-note strong{color:#1e6643}
+.direct-payment-booking-note small,
+.direct-payment-booking-note span{color:#5f7467;font-size:.72rem;line-height:1.4}
