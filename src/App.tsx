@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import { InstructorBannerStudio } from './banner-studio';
 import { AdminProfileBannerPanel, ProfileBannerStudio, ProfileHeroBanner } from './profile-banner-studio';
+import { AdminSafetyPanel, BlockedUsersPanel, SafetyActions } from './safety-center';
 import {
   AccountDeletionPanel,
   DeletionRequestsAdminPanel,
@@ -359,6 +360,7 @@ function App() {
     }
   });
   const [registerBusy, setRegisterBusy] = useState(false);
+  const [registerAcceptedTerms, setRegisterAcceptedTerms] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -374,6 +376,8 @@ function App() {
   const [bookingLearnerId, setBookingLearnerId] = useState('');
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState('');
+  const [bookingAcceptedPolicy, setBookingAcceptedPolicy] = useState(false);
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [dashboardTab, setDashboardTab] = useState('summary');
   const [platformFeePercent, setPlatformFeePercent] = useState(0);
@@ -439,6 +443,19 @@ function App() {
       activeSession.access_token
     )) as Booking[];
     setBookings(data);
+  }
+
+  async function loadBlockedUsers(activeSession: Session) {
+    const rows = (await api(
+      '/rest/v1/user_blocks?blocker_id=eq.' +
+        encodeURIComponent(activeSession.user.id) +
+        '&select=blocked_user_id',
+      {},
+      activeSession.access_token
+    )) as Array<{ blocked_user_id: string }>;
+    const ids = rows.map(row => row.blocked_user_id);
+    setBlockedUserIds(ids);
+    return ids;
   }
 
   async function loadAdminProfiles(activeSession: Session) {
@@ -531,6 +548,7 @@ function App() {
     }
 
     if (adminResult) {
+      setBlockedUserIds([]);
       await Promise.all([
         loadAdminListings(activeSession),
         loadBookings(activeSession),
@@ -540,9 +558,13 @@ function App() {
       await Promise.all([
         loadBookings(activeSession),
         loadOwnInstructorListing(activeSession),
+        loadBlockedUsers(activeSession),
       ]);
     } else {
-      await loadBookings(activeSession);
+      await Promise.all([
+        loadBookings(activeSession),
+        loadBlockedUsers(activeSession),
+      ]);
     }
 
     return { isAdmin: Boolean(adminResult), profile: currentProfile };
@@ -644,7 +666,8 @@ function App() {
         itemDistance == null ||
         itemDistance <= effectiveRadius;
 
-      return matchesText && matchesCategory && matchesRegion && matchesRadius;
+      const notBlocked = !blockedUserIds.includes(item.instructor_id);
+      return matchesText && matchesCategory && matchesRegion && matchesRadius && notBlocked;
     });
 
     return [...matches].sort((a, b) => {
@@ -698,6 +721,7 @@ function App() {
     distanceRadiusKm,
     growthSettings?.boost_enabled,
     growthSettings?.launch_mode,
+    blockedUserIds,
   ]);
 
   async function saveLearningLocation(location: LearningLocation) {
@@ -782,8 +806,12 @@ function App() {
       return;
     }
 
-    if (registerPassword.length < 8) {
-      setRegisterError('Password minimal 8 karakter.');
+    if (
+      registerPassword.length < 8 ||
+      !/[A-Za-z]/.test(registerPassword) ||
+      !/\d/.test(registerPassword)
+    ) {
+      setRegisterError('Password minimal 8 karakter dan harus memuat huruf serta angka.');
       return;
     }
 
@@ -816,6 +844,13 @@ function App() {
       return;
     }
 
+    if (!registerAcceptedTerms) {
+      setRegisterError(
+        'Anda harus menyetujui Syarat & Ketentuan dan Kebijakan Privasi GuruLes.'
+      );
+      return;
+    }
+
     setRegisterBusy(true);
     try {
       const result = (await api('/functions/v1/register-gurules', {
@@ -839,6 +874,9 @@ function App() {
           title: registerRole === 'instructor' ? registerTitle.trim() : undefined,
           method: registerRole === 'instructor' ? registerMethod : undefined,
           price: registerRole === 'instructor' ? Number(registerPrice) : undefined,
+          accepted_terms: registerAcceptedTerms,
+          terms_version: '2026-09-24',
+          privacy_version: '2026-09-24',
         }),
       })) as { ok: boolean; login: string; message?: string };
 
@@ -863,6 +901,7 @@ function App() {
       setRegisterConfirmPassword('');
       setRegisterReferralCode('');
       setRegisterTitle('');
+      setRegisterAcceptedTerms(false);
       setRegisterError('');
     } catch (error) {
       setRegisterError(
@@ -937,6 +976,8 @@ function App() {
     setServiceRadiusKm('10');
     setSelectedPackage(null);
     setBookingLearnerId('');
+    setBookingAcceptedPolicy(false);
+    setBlockedUserIds([]);
     setBrandError('');
     setBrandSuccess('');
     setSelectedListing(null);
@@ -958,6 +999,7 @@ function App() {
     setBookingNotes('');
     setSelectedPackage(null);
     setBookingLearnerId('');
+    setBookingAcceptedPolicy(false);
 
     if (!session) {
       setShowLogin(true);
@@ -969,6 +1011,11 @@ function App() {
       (profile?.role !== 'parent' && profile?.role !== 'student')
     ) {
       window.alert('Pemesanan dilakukan melalui akun Pencari Guru.');
+      return;
+    }
+
+    if (blockedUserIds.includes(item.instructor_id)) {
+      window.alert('Pengajar ini sedang Anda blokir. Buka blokir terlebih dahulu untuk melakukan booking.');
       return;
     }
 
@@ -1002,6 +1049,11 @@ function App() {
       return;
     }
 
+    if (!bookingAcceptedPolicy) {
+      setBookingError('Anda harus menyetujui Kebijakan Transaksi sebelum mengirim booking.');
+      return;
+    }
+
     setBookingBusy(true);
     try {
       const result = (await api(
@@ -1019,6 +1071,8 @@ function App() {
                 ? null
                 : bookingAddress.trim() || null,
             buyer_notes: bookingNotes.trim() || null,
+            accepted_transaction_policy: bookingAcceptedPolicy,
+            transaction_policy_version: '2026-09-24',
           }),
         },
         session.access_token
@@ -1029,6 +1083,7 @@ function App() {
       setSelectedListing(null);
       setSelectedPackage(null);
       setBookingLearnerId('');
+      setBookingAcceptedPolicy(false);
       window.alert(result.message || 'Permintaan belajar berhasil dikirim ke pengajar.');
     } catch (error) {
       setBookingError(
@@ -1278,6 +1333,7 @@ function App() {
         { id: 'instructors', icon: '🎓', label: 'Pengajar' },
         { id: 'banners', icon: '🎨', label: 'Banner' },
         { id: 'payment', icon: '💳', label: 'Pembayaran' },
+        { id: 'safety', icon: '🛡️', label: 'Keamanan' },
       ]
     : profile?.role === 'instructor'
       ? [
@@ -1769,6 +1825,22 @@ function App() {
                     >
                       Pesan Sekarang
                     </button>
+                    {session &&
+                      (profile?.role === 'parent' || profile?.role === 'student') && (
+                        <SafetyActions
+                          session={session}
+                          listing={item}
+                          blocked={blockedUserIds.includes(item.instructor_id)}
+                          onBlockChanged={async blocked => {
+                            setBlockedUserIds(current =>
+                              blocked
+                                ? Array.from(new Set([...current, item.instructor_id]))
+                                : current.filter(id => id !== item.instructor_id)
+                            );
+                            await loadBlockedUsers(session);
+                          }}
+                        />
+                      )}
                   </div>
                 </div>
               </article>
@@ -2039,6 +2111,10 @@ function App() {
                 />
               </div>
 
+              <div hidden={dashboardTab !== 'safety'}>
+                <AdminSafetyPanel session={session} />
+              </div>
+
               <div hidden={dashboardTab !== 'privacy'}>
                 <DeletionRequestsAdminPanel accessToken={session.access_token} />
               </div>
@@ -2216,6 +2292,19 @@ function App() {
                 </div>
 
                 <div hidden={dashboardTab !== 'account'}>
+                  <div className="account-help-links">
+                    <a href="/help.html" target="_blank" rel="noreferrer">❓ Pusat Bantuan</a>
+                    <a href="/terms.html" target="_blank" rel="noreferrer">Syarat & Ketentuan</a>
+                    <a href="/transaction-policy.html" target="_blank" rel="noreferrer">Kebijakan Transaksi</a>
+                    <a href="/privacy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a>
+                  </div>
+                  {(profile?.role === 'parent' || profile?.role === 'student') && (
+                    <BlockedUsersPanel
+                      session={session}
+                      listings={listings}
+                      onChanged={() => loadBlockedUsers(session)}
+                    />
+                  )}
                   {profile && (
                     <AccountDeletionPanel
                       accessToken={session.access_token}
@@ -2917,7 +3006,10 @@ function App() {
       <footer>
         <strong>🎓 GuruLes</strong>
         <span>Marketplace pengajar privat · Arieftoteles Production</span>
+        <a href="/terms.html" target="_blank" rel="noreferrer">Syarat & Ketentuan</a>
+        <a href="/transaction-policy.html" target="_blank" rel="noreferrer">Kebijakan Transaksi</a>
         <a href="/privacy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a>
+        <a href="/help.html" target="_blank" rel="noreferrer">Pusat Bantuan</a>
         <a href="/delete-account.html" target="_blank" rel="noreferrer">Hapus Akun</a>
       </footer>
 
@@ -3160,7 +3252,21 @@ function App() {
                   terverifikasi, perubahan jadwal harus disetujui kedua pihak.
                   No-show atau masalah transaksi ditangani melalui sengketa Admin.
                 </span>
+                <a href="/transaction-policy.html" target="_blank" rel="noreferrer">
+                  Baca Kebijakan Transaksi
+                </a>
               </div>
+              <label className="legal-consent">
+                <input
+                  type="checkbox"
+                  checked={bookingAcceptedPolicy}
+                  onChange={event => setBookingAcceptedPolicy(event.target.checked)}
+                />
+                <span>
+                  Saya telah membaca dan menyetujui Kebijakan Transaksi GuruLes
+                  untuk booking ini.
+                </span>
+              </label>
 
               {bookingError && (
                 <div className="form-error">{bookingError}</div>
@@ -3269,7 +3375,7 @@ function App() {
                     autoComplete="new-password"
                     value={registerPassword}
                     onChange={event => setRegisterPassword(event.target.value)}
-                    placeholder="Minimal 8 karakter"
+                    placeholder="Minimal 8 karakter, huruf + angka"
                   />
                 </label>
                 <label>
@@ -3400,6 +3506,18 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                <label className="legal-consent registration-consent">
+                  <input
+                    type="checkbox"
+                    checked={registerAcceptedTerms}
+                    onChange={event => setRegisterAcceptedTerms(event.target.checked)}
+                  />
+                  <span>
+                    Saya menyetujui <a href="/terms.html" target="_blank" rel="noreferrer">Syarat & Ketentuan</a>
+                    {' '}dan <a href="/privacy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a> GuruLes.
+                  </span>
+                </label>
 
                 {registerError && (
                   <div className="form-error">{registerError}</div>
