@@ -2468,23 +2468,30 @@ function App() {
                           />
                         </details>
 
-                        {brandError && (
-                          <div className="form-error">{brandError}</div>
-                        )}
-                        {brandSuccess && (
-                          <div className="form-success">{brandSuccess}</div>
-                        )}
-
-                        <div className="branding-actions">
+                        <div className="branding-actions profile-save-actions">
                           <button
                             className="button primary"
                             disabled={brandBusy}
                             onClick={() => void saveBranding()}
                           >
                             {brandBusy
-                              ? 'Menyimpan...'
+                              ? 'Menyimpan Profil...'
                               : 'Simpan Profil'}
                           </button>
+                          {ownListing.auto_profile_banner_enabled !== false && (
+                            <small>
+                              Banner Otomatis ikut diperbarui saat profil disimpan.
+                            </small>
+                          )}
+                        </div>
+
+                        <div className="profile-save-status" aria-live="polite">
+                          {brandError && (
+                            <div className="form-error">{brandError}</div>
+                          )}
+                          {brandSuccess && (
+                            <div className="form-success">{brandSuccess}</div>
+                          )}
                         </div>
                       </>
                     )}
