@@ -1734,7 +1734,14 @@ function App() {
 
           <div className="teacher-grid">
             {filtered.map(item => (
-              <article className="teacher-card" key={item.id}>
+              <article
+                className={
+                  'teacher-card' +
+                  (item.premium_until && new Date(item.premium_until) > new Date() ? ' teacher-card-pro' : '') +
+                  (item.featured_until && new Date(item.featured_until) > new Date() ? ' teacher-card-featured' : '')
+                }
+                key={item.id}
+              >
                 {(!session || profile?.role === 'parent' || profile?.role === 'student') && (
                   <FavoriteButton
                     session={session}
@@ -2851,7 +2858,11 @@ function App() {
                       <div className="parent-teacher-list">
                         {listings.map(item => (
                           <article
-                            className="parent-teacher-card"
+                            className={
+                              'parent-teacher-card' +
+                              (item.premium_until && new Date(item.premium_until) > new Date() ? ' teacher-card-pro' : '') +
+                              (item.featured_until && new Date(item.featured_until) > new Date() ? ' teacher-card-featured' : '')
+                            }
                             key={item.id}
                           >
                             <div className="parent-teacher-main">
@@ -2880,6 +2891,14 @@ function App() {
                                   <span className="verified">
                                     ✓ Terverifikasi
                                   </span>
+                                  {item.featured_until &&
+                                    new Date(item.featured_until) > new Date() && (
+                                      <span className="paid-promo-badge">⭐ Featured · Promosi</span>
+                                    )}
+                                  {item.premium_until &&
+                                    new Date(item.premium_until) > new Date() && (
+                                      <span className="paid-promo-badge">💎 Pro</span>
+                                    )}
                                 </div>
                                 <h4>{item.title}</h4>
                                 {item.tagline && (
