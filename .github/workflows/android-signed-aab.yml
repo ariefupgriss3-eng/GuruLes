@@ -1,6 +1,9 @@
 name: Build Android AAB (signed)
 
 on:
+  push:
+    branches:
+      - "release/android-v1.1.7-monetization-rate-card"
   workflow_dispatch:
     inputs:
       version_code:
@@ -72,8 +75,8 @@ jobs:
 
       - name: Prepare signed GuruLes release
         env:
-          ANDROID_VERSION_CODE: ${{ inputs.version_code }}
-          ANDROID_VERSION_NAME: ${{ inputs.version_name }}
+          ANDROID_VERSION_CODE: ${{ inputs.version_code || '11' }}
+          ANDROID_VERSION_NAME: ${{ inputs.version_name || '1.1.7' }}
           ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/gurules-upload-key.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -101,7 +104,7 @@ jobs:
       - name: Upload signed AAB
         uses: actions/upload-artifact@v4
         with:
-          name: gurules-signed-aab-v${{ inputs.version_name }}-${{ inputs.version_code }}
+          name: gurules-signed-aab-v${{ inputs.version_name || '1.1.7' }}-${{ inputs.version_code || '11' }}
           path: |
             android/app/build/outputs/bundle/release/app-release.aab
             android/app/build/outputs/bundle/release/app-release.aab.sha256
