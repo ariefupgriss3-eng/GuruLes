@@ -2,6 +2,16 @@ name: Build Android AAB (unsigned)
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "capacitor.config.ts"
+      - "scripts/android-postsync.mjs"
+      - ".github/workflows/android-aab.yml"
 
 permissions:
   contents: read
