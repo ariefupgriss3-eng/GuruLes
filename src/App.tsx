@@ -36,6 +36,8 @@ import {
   LessonPackagePicker,
   NotificationCenter,
   PackageSessionProgress,
+  PilotDashboard,
+  PilotFeedback,
   ReferralPanel,
   loadGrowthSettings,
 } from './growth-suite';
@@ -1722,6 +1724,7 @@ function App() {
                     totalUsers={adminProfiles.length}
                     totalInstructors={adminListings.length}
                   />
+                  <PilotDashboard session={session} settings={growthSettings} />
                 </div>
 
                 <div
@@ -2597,6 +2600,14 @@ function App() {
                                 booking={booking}
                                 onReviewed={() => loadPublicListings()}
                               />
+                              {profile && (
+                                <PilotFeedback
+                                  session={session}
+                                  booking={booking}
+                                  role={profile.role}
+                                  enabled={Boolean(growthSettings?.pilot_mode)}
+                                />
+                              )}
                               {booking.status === 'completed' &&
                                 profile &&
                                 (profile.role === 'parent' ||

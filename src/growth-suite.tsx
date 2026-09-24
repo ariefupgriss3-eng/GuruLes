@@ -19,6 +19,11 @@ export type GrowthSettings = {
   premium_enabled: boolean;
   boost_enabled: boolean;
   payment_automation_mode: string;
+  pilot_mode: boolean;
+  pilot_teacher_limit: number;
+  pilot_buyer_limit: number;
+  pilot_title: string;
+  pilot_message: string;
 };
 
 export type GrowthPackage = {
@@ -107,6 +112,21 @@ export async function loadGrowthSettings(token?: string) {
 }
 
 export function LaunchBanner({ settings }: { settings: GrowthSettings | null }) {
+  if (settings?.pilot_mode) {
+    return (
+      <section className="launch-banner" aria-label="Program uji coba terbatas GuruLes">
+        <div className="launch-icon">🧪</div>
+        <div>
+          <strong>{settings.pilot_title || 'Uji Coba Terbatas GuruLes'}</strong>
+          <span>
+            {settings.pilot_message ||
+              'Pilot awal untuk pengajar dan pencari guru. Fee platform tetap 0% selama masa uji coba.'}
+          </span>
+        </div>
+        <b>PILOT · 0% FEE</b>
+      </section>
+    );
+  }
   if (!settings?.launch_mode) return null;
   return (
     <section className="launch-banner" aria-label="Program peluncuran GuruLes">
@@ -737,6 +757,210 @@ export function PackageSessionProgress({
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+
+export function PilotFeedback({
+  session,
+  booking,
+  role,
+  enabled,
+}: {
+  session: GrowthSession;
+  booking: GrowthBooking;
+  role: 'parent' | 'student' | 'instructor';
+  enabled: boolean;
+}) {
+  const [submitted, setSubmitted] = useState(false);
+  const [overall, setOverall] = useState(5);
+  const [ease, setEase] = useState(5);
+  const [issueType, setIssueType] = useState('none');
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const feedbackRole = role === 'instructor' ? 'instructor' : 'buyer';
+
+  useEffect(() => {
+    if (!enabled || booking.status !== 'completed') return;
+    void api(
+      '/rest/v1/pilot_feedback?booking_id=eq.' + encodeURIComponent(booking.id) +
+      '&user_id=eq.' + encodeURIComponent(session.user.id) +
+      '&select=id&limit=1',
+      {},
+      session.access_token
+    ).then((rows: Array<{id:string}>) => setSubmitted(rows.length > 0))
+      .catch(() => undefined);
+  }, [enabled, booking.id, booking.status, session.access_token, session.user.id]);
+
+  if (!enabled || booking.status !== 'completed') return null;
+
+  if (submitted) {
+    return (
+      <div className="muted-note">
+        🧪 Terima kasih. Feedback pilot untuk transaksi ini sudah tersimpan.
+      </div>
+    );
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage('');
+    try {
+      await api(
+        '/rest/v1/pilot_feedback',
+        {
+          method: 'POST',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            booking_id: booking.id,
+            user_id: session.user.id,
+            role: feedbackRole,
+            overall_rating: overall,
+            ease_rating: ease,
+            issue_type: issueType,
+            comment: comment.trim(),
+          }),
+        },
+        session.access_token
+      );
+      setSubmitted(true);
+      setMessage('Feedback pilot berhasil dikirim. Terima kasih.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Feedback belum dapat disimpan.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="growth-panel learner-form" onSubmit={submit}>
+      <div className="feature-head">
+        <div>
+          <span className="eyebrow">🧪 Feedback Pilot</span>
+          <h3>Bantu menyempurnakan GuruLes</h3>
+          <p>Nilai pengalaman transaksi ini. Masukan Anda dipakai untuk perbaikan sebelum peluncuran luas.</p>
+        </div>
+      </div>
+      <label>
+        Kepuasan keseluruhan
+        <select value={overall} onChange={e => setOverall(Number(e.target.value))}>
+          <option value={5}>5 · Sangat baik</option>
+          <option value={4}>4 · Baik</option>
+          <option value={3}>3 · Cukup</option>
+          <option value={2}>2 · Kurang</option>
+          <option value={1}>1 · Buruk</option>
+        </select>
+      </label>
+      <label>
+        Kemudahan penggunaan
+        <select value={ease} onChange={e => setEase(Number(e.target.value))}>
+          <option value={5}>5 · Sangat mudah</option>
+          <option value={4}>4 · Mudah</option>
+          <option value={3}>3 · Cukup</option>
+          <option value={2}>2 · Sulit</option>
+          <option value={1}>1 · Sangat sulit</option>
+        </select>
+      </label>
+      <label>
+        Bagian yang perlu diperbaiki
+        <select value={issueType} onChange={e => setIssueType(e.target.value)}>
+          <option value="none">Tidak ada masalah</option>
+          <option value="registration">Pendaftaran / login</option>
+          <option value="search">Pencarian pengajar / lokasi</option>
+          <option value="schedule">Jadwal</option>
+          <option value="booking">Booking</option>
+          <option value="payment">Pembayaran</option>
+          <option value="session">Pelaksanaan sesi</option>
+          <option value="other">Lainnya</option>
+        </select>
+      </label>
+      <label className="brand-tagline-field">
+        Catatan
+        <textarea
+          rows={3}
+          value={comment}
+          maxLength={2000}
+          onChange={e => setComment(e.target.value)}
+          placeholder="Apa yang sudah baik dan apa yang perlu diperbaiki?"
+        />
+      </label>
+      <button className="button primary small" type="submit" disabled={busy}>
+        {busy ? 'Mengirim...' : 'Kirim Feedback Pilot'}
+      </button>
+      {message && <div className="form-success">{message}</div>}
+    </form>
+  );
+}
+
+export function PilotDashboard({
+  session,
+  settings,
+}: {
+  session: GrowthSession;
+  settings: GrowthSettings | null;
+}) {
+  const [profiles, setProfiles] = useState<Array<{id:string;role:string}>>([]);
+  const [bookings, setBookings] = useState<Array<{id:string;status:string}>>([]);
+  const [feedback, setFeedback] = useState<Array<{overall_rating:number;ease_rating:number;issue_type:string}>>([]);
+
+  async function load() {
+    const [profileRows, bookingRows, feedbackRows] = await Promise.all([
+      api('/rest/v1/profiles?select=id,role', {}, session.access_token),
+      api('/rest/v1/bookings?select=id,status', {}, session.access_token),
+      api('/rest/v1/pilot_feedback?select=overall_rating,ease_rating,issue_type', {}, session.access_token),
+    ]);
+    setProfiles(profileRows as Array<{id:string;role:string}>);
+    setBookings(bookingRows as Array<{id:string;status:string}>);
+    setFeedback(feedbackRows as Array<{overall_rating:number;ease_rating:number;issue_type:string}>);
+  }
+
+  useEffect(() => {
+    if (!settings?.pilot_mode) return;
+    void load().catch(() => undefined);
+  }, [settings?.pilot_mode, session.access_token]);
+
+  if (!settings?.pilot_mode) return null;
+
+  const teachers = profiles.filter(row => row.role === 'instructor').length;
+  const buyers = profiles.filter(row => row.role === 'parent' || row.role === 'student').length;
+  const completed = bookings.filter(row => row.status === 'completed').length;
+  const avgOverall = feedback.length
+    ? feedback.reduce((sum, row) => sum + Number(row.overall_rating || 0), 0) / feedback.length
+    : 0;
+  const avgEase = feedback.length
+    ? feedback.reduce((sum, row) => sum + Number(row.ease_rating || 0), 0) / feedback.length
+    : 0;
+  const issues = feedback.filter(row => row.issue_type && row.issue_type !== 'none').length;
+
+  return (
+    <div className="growth-panel">
+      <div className="feature-head">
+        <div>
+          <span className="eyebrow">🧪 Monitoring Pilot</span>
+          <h3>Uji coba terbatas GuruLes</h3>
+          <p>
+            Kuota dikendalikan otomatis: maksimal {settings.pilot_teacher_limit} pengajar
+            dan {settings.pilot_buyer_limit} pencari guru.
+          </p>
+        </div>
+        <button className="button secondary small" onClick={() => void load()}>
+          Segarkan
+        </button>
+      </div>
+      <div className="admin-growth-summary">
+        <div><strong>{teachers}/{settings.pilot_teacher_limit}</strong><span>Pengajar pilot</span></div>
+        <div><strong>{buyers}/{settings.pilot_buyer_limit}</strong><span>Pencari guru</span></div>
+        <div><strong>{bookings.length}</strong><span>Total booking</span></div>
+        <div><strong>{completed}</strong><span>Sesi selesai</span></div>
+        <div><strong>{feedback.length}</strong><span>Feedback masuk</span></div>
+        <div><strong>{avgOverall ? avgOverall.toFixed(1) : '-'}</strong><span>Kepuasan / 5</span></div>
+        <div><strong>{avgEase ? avgEase.toFixed(1) : '-'}</strong><span>Kemudahan / 5</span></div>
+        <div><strong>{issues}</strong><span>Feedback bermasalah</span></div>
       </div>
     </div>
   );
