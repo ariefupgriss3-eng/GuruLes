@@ -168,6 +168,9 @@ write(
 );
 
 // Hilangkan splash bawaan Capacitor lalu gunakan splash GuruLes sederhana dan aman.
+const baseSplashPng = path.join(resDir, 'drawable', 'splash.png');
+if (fs.existsSync(baseSplashPng)) fs.rmSync(baseSplashPng);
+
 if (fs.existsSync(resDir)) {
   for (const entry of fs.readdirSync(resDir, { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.startsWith('drawable-')) continue;
