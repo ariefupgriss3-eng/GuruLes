@@ -1,6 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { PWAInstallButton, PWAUpdateNotice } from './pwa';
 import {
+  AccountDeletionPanel,
+  DeletionRequestsAdminPanel,
+} from './account-deletion';
+import {
   AdminPaymentSettings,
   BookingTransactionControls,
 } from './payment';
@@ -1231,6 +1235,7 @@ function App() {
           { id: 'schedule', icon: '📅', label: 'Jadwal' },
           { id: 'growth', icon: '🚀', label: 'Pertumbuhan' },
           { id: 'profile', icon: '👤', label: 'Profil' },
+          { id: 'account', icon: '🔐', label: 'Akun' },
         ]
       : [
           { id: 'summary', icon: '🏠', label: 'Ringkasan' },
@@ -1239,6 +1244,7 @@ function App() {
           { id: 'learners', icon: '👨‍👩‍👧', label: 'Pelajar' },
           { id: 'chat', icon: '💬', label: 'Chat' },
           { id: 'find', icon: '🔎', label: 'Cari Guru' },
+          { id: 'account', icon: '🔐', label: 'Akun' },
         ];
 
   function openDashboardTab(tab: string) {
@@ -1853,6 +1859,10 @@ function App() {
                 />
               </div>
 
+              <div hidden={dashboardTab !== 'privacy'}>
+                <DeletionRequestsAdminPanel accessToken={session.access_token} />
+              </div>
+
               <div
                 className="admin-booking-report"
                 hidden={dashboardTab !== 'orders'}
@@ -2023,6 +2033,15 @@ function App() {
                       ? 'Kelola pesanan, pendapatan, jadwal, chat, dan profil pengajar dari satu dashboard.'
                       : 'Kelola pesanan, pengajar favorit, chat, dan pencarian dari satu dashboard.'}
                   </p>
+                </div>
+
+                <div hidden={dashboardTab !== 'account'}>
+                  {profile && (
+                    <AccountDeletionPanel
+                      accessToken={session.access_token}
+                      fullName={profile.full_name}
+                    />
+                  )}
                 </div>
 
                 {(profile?.role === 'parent' || profile?.role === 'student') && (
@@ -2668,6 +2687,7 @@ function App() {
         <strong>🎓 GuruLes</strong>
         <span>Marketplace pengajar privat · Arieftoteles Production</span>
         <a href="/privacy.html" target="_blank" rel="noreferrer">Kebijakan Privasi</a>
+        <a href="/delete-account.html" target="_blank" rel="noreferrer">Hapus Akun</a>
       </footer>
 
       <nav className="mobile-bottom-nav" aria-label="Navigasi utama">
