@@ -22,3 +22,148 @@
 @media(max-width:700px){.premium-fields,.premium-fields.three{grid-template-columns:1fr}.premium-fields .wide{grid-column:auto}.premium-studio-head{flex-direction:column}.premium-actions{display:grid;grid-template-columns:1fr 1fr}.premium-actions .button.primary,.premium-actions .premium-activate{grid-column:1/-1}.premium-saved-list article{grid-template-columns:90px 1fr}.premium-saved-list img,.premium-saved-placeholder{width:90px}.premium-saved-actions{grid-column:1/-1;justify-content:flex-start}.premium-preview-wrap{overflow-x:auto}.premium-edu-green{min-width:620px}}
 
 .premium-banner-admin{margin-top:16px;padding:18px;border:1px solid #dfe8e1;border-radius:20px;background:#fff}.premium-admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}.premium-admin-grid article{border:1px solid #e3ebe5;border-radius:14px;overflow:hidden;background:#fbfdfb}.premium-admin-grid img,.premium-admin-grid .premium-saved-placeholder{display:block;width:100%;aspect-ratio:1536/691;object-fit:cover}.premium-admin-grid article>div:last-child{display:grid;gap:4px;padding:11px}.premium-admin-grid span,.premium-admin-grid small{color:#718378;font-size:.7rem}.premium-admin-grid b{font-size:.68rem;color:#177442}
+
+
+/* Premium Edu Green — layout polish v2
+   Tujuan: foto lebih dominan, papan kutipan tidak menutup wajah,
+   komposisi tengah lebih lega, dan badge promo aman dari tepi. */
+.premium-edu-green{
+  grid-template-columns:36% 44% 20%;
+  background:
+    radial-gradient(circle at 68% 16%,rgba(211,184,100,.16),transparent 26%),
+    linear-gradient(112deg,#f7f3e7 0%,#fffdf8 55%,#eee4c9 100%);
+}
+.premium-board-note{
+  left:1.25%;
+  top:6%;
+  width:11.5%;
+  padding:1.35% 1.2%;
+  border-width:5px;
+  border-radius:8px;
+  transform:rotate(-2deg);
+  font-size:clamp(.36rem,.88vw,.68rem);
+  line-height:1.18;
+  box-shadow:0 8px 18px rgba(41,57,44,.18);
+  z-index:6;
+}
+.premium-photo{
+  width:94%;
+  height:92%;
+  margin-left:6%;
+  border-radius:0 22px 0 0;
+  overflow:hidden;
+}
+.premium-photo:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,rgba(247,243,231,.34) 0%,transparent 20%,transparent 100%);
+  pointer-events:none;
+  z-index:2;
+}
+.premium-photo:after{
+  height:15%;
+  z-index:3;
+}
+.premium-photo img{
+  object-position:center 18%;
+  transform:scale(1.015);
+}
+.premium-top-note{
+  left:60.5%;
+  top:3.2%;
+  max-width:18%;
+  font-size:clamp(.34rem,.82vw,.62rem);
+  line-height:1.2;
+}
+.premium-center{
+  padding:5.1% 4.2% 3.8%;
+  gap:2.7%;
+}
+.premium-brand{
+  margin-bottom:.6%;
+}
+.premium-center h2{
+  font-size:clamp(1rem,2.85vw,2.25rem);
+  line-height:1.05;
+  letter-spacing:-.018em;
+  text-wrap:balance;
+}
+.premium-degree{
+  margin-top:-1%;
+  margin-bottom:.5%;
+}
+.premium-service-title{
+  max-width:94%;
+  padding:1.45% 6.5%;
+  box-shadow:0 5px 12px rgba(25,71,47,.12);
+}
+.premium-strengths{
+  gap:3.4%;
+  margin-top:.5%;
+}
+.premium-strengths span+span{
+  padding-left:3.4%;
+}
+.premium-center blockquote{
+  padding:1.75% 4.5%;
+  line-height:1.28;
+}
+.premium-benefits{
+  margin-top:.3%;
+}
+.premium-benefits div{
+  padding:2.6% 2%;
+}
+.premium-contact-line{
+  margin-top:.3%;
+  gap:2.5%;
+}
+.premium-right{
+  padding:23% 8% 11%;
+  justify-content:center;
+  align-items:center;
+  gap:5.5%;
+}
+.premium-right-quote{
+  right:6%;
+  top:7%;
+  max-width:88%;
+  font-size:clamp(.34rem,.86vw,.62rem);
+  line-height:1.22;
+}
+.premium-book-stack{
+  width:100%;
+  gap:3%;
+  margin-top:16%;
+}
+.premium-book-stack span{
+  padding:4.2% 7%;
+}
+.premium-promo-seal{
+  width:62%;
+  max-width:138px;
+  flex:0 0 auto;
+  margin-top:1%;
+  padding:7%;
+  border-width:3px;
+  box-shadow:0 7px 16px rgba(31,61,41,.22);
+}
+.premium-promo-seal strong{
+  font-size:clamp(.36rem,.9vw,.64rem);
+}
+.premium-footer{
+  padding:1.05% 3%;
+}
+
+@media(max-width:1050px){
+  .premium-board-note{width:12.5%;font-size:clamp(.4rem,1.25vw,.72rem)}
+  .premium-photo{width:95%;margin-left:5%}
+  .premium-promo-seal{max-width:132px}
+}
+@media(max-width:700px){
+  .premium-edu-green{grid-template-columns:36% 44% 20%}
+  .premium-board-note{width:11.5%;font-size:.48rem;border-width:4px}
+  .premium-photo{height:91%}
+  .premium-promo-seal{width:60%;max-width:108px}
+}
