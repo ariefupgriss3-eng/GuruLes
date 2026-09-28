@@ -3558,19 +3558,6 @@ function App() {
                   />
                 </label>
 
-                <label>
-                  Kode referral (opsional)
-                  <input
-                    value={registerReferralCode}
-                    onChange={event =>
-                      setRegisterReferralCode(event.target.value.toUpperCase())
-                    }
-                    placeholder="Contoh: GL1234ABCD"
-                    maxLength={20}
-                  />
-                  <small>Isi bila Anda mendapat kode dari pengguna GuruLes.</small>
-                </label>
-
                 {registerRole === 'instructor' && (
                   <div className="instructor-fields">
                     <div className="section-divider">
